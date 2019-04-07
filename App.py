@@ -1,15 +1,15 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QObject, pyqtSlot
+from PyQt5 import QtWidgets, QtGui
 from MainWindow import Ui_MainWindow
 from PyQt5.QtWidgets import QLineEdit, QFileDialog
 import sys
-
+from Model import Model
 
 class MainWindowUIClass(Ui_MainWindow):
     def __init__(self):
         '''Initialize the super class
         '''
         super().__init__()
+        self.model = Model()
 
     def setupUi(self, MainWindow):
         ''' Setup the UI of the super class, and add here code
@@ -17,9 +17,14 @@ class MainWindowUIClass(Ui_MainWindow):
         '''
         super().setupUi(MainWindow)
 
+        #my code
+
+        #self.progressBarFile.setValue(0)
+        #hasta aca
+
         # close the lower part of the splitter to hide the
         # debug window under normal operations
-        # self.splitter.setSizes([300, 0])
+        self.splitter.setSizes([300, 0])
 
     def debugPrint(self, msg):
         '''Print the message in the text edit at the bottom of the
@@ -27,18 +32,57 @@ class MainWindowUIClass(Ui_MainWindow):
         '''
         self.textBrowser.append(msg)
 
+    def refreshAll(self):
+        '''
+        Updates the widgets whenever an interaction happens.
+        Typically some interaction takes place, the UI responds,
+        and informs the model of the change.  Then this method
+        is called, pulling from the model information that is
+        updated in the GUI.
+        '''
+        self.lineEditNameFile.setText(self.model.getFileName())
+        #self.textEdit.setText(self.model.getFileContents())
+        results = self.model.getFileContents()
+        self.labelTotalRecords.setText(self.model.getFileTotal())
+
+
+
+
         # slot
 
     def returnPressedSlot(self):
         ''' Called when the user enters a string in the line edit and
         presses the ENTER key.
         '''
-        self.debugPrint("RETURN key pressed in LineEdit widget")
+
+        fileName = self.lineEditNameFile.text()
+        if self.model.isValid(fileName):
+            self.model.setFileName(self.lineEditNameFile.text())
+            self.refreshAll()
+        else:
+            m = QtWidgets.QMessageBox()
+            m.setText("Invalid file name!\n" + fileName)
+            m.setIcon(QtWidgets.QMessageBox.Warning)
+            m.setStandardButtons(QtWidgets.QMessageBox.Ok
+                                 | QtWidgets.QMessageBox.Cancel)
+            m.setDefaultButton(QtWidgets.QMessageBox.Cancel)
+            ret = m.exec_()
+            self.lineEditNameFile.setText("")
+            self.refreshAll()
+            self.debugPrint("Invalid file specified: " + fileName)
+
+        self.debugPrint("RETURN key pressed in LineEditNameFile widget")
 
     # slot
     def uploadSlot(self):
         ''' Called when the user presses the Upload button.
         '''
+        #mi codigo empeiza aca
+
+        self.model.writeDoc(self.textEdit.toPlainText())
+        #self.progressfile()
+
+        #termina aca
         self.debugPrint("Upload button pressed")
 
     # slot
@@ -47,20 +91,50 @@ class MainWindowUIClass(Ui_MainWindow):
         '''
 
         # this is my new code
-        directory = self.browse_folder()
-        QLineEdit.setText(self.lineEdit, directory)
-        # hasta aca
+        self.browse_folder()
+        # directory = self.browse_folder()
+        # QLineEdit.setText(self.lineEditNameFile, directory)
+        # import pandas as pd
+        # df_hotel = pd.read_csv(directory)
+        # print(df_hotel.head(10))
 
         self.debugPrint("Browse button pressed")
 
+    #my code
     def browse_folder(self):
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        filename, _ = QFileDialog.getOpenFileName(None, "QFileDialog.getOpenFileName()", "",
-                                                  "All Files (*);;Python Files (*.py)", options=options)
-        if filename:
-            print(filename)
-            return filename
+
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        fileName, _ = QtWidgets.QFileDialog.getOpenFileName(
+            None,
+            "QFileDialog.getOpenFileName()",
+            "",
+            "All Files (*);;Python Files (*.py)",
+            options=options)
+        if fileName:
+            self.debugPrint("setting file name: " + fileName)
+            self.model.setFileName(fileName)
+            self.refreshAll()
+
+        # options = QFileDialog.Options()
+        # options |= QFileDialog.DontUseNativeDialog
+        # filename, _ = QFileDialog.getOpenFileName(None, "QFileDialog.getOpenFileName()", "",
+        #                                           "All Files (*);;Python Files (*.py)", options=options)
+        # if filename:
+        #     print(filename)
+        #     return filename
+
+
+    #hasta aca
+
+    def progressfile(self):
+        self.completed = 0
+
+        while self.completed < 100:
+            self.completed += 0.001
+            self.progressBarFile.setValue(self.completed)
+
+
 
 
 def main():
