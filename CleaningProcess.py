@@ -50,13 +50,13 @@ def remove_stop_w(): #Removal of Stop Words
 
 def cont_neg_feel(): # Number of Words (the negative sentiments contain
                      # a lesser amount of words than the positive ones.)
-  df["wordcount_reviews.text"]=df["reviews.text"].apply(lambda x: len(str(x).split(" ")))
-  df["wordcount_reviews.title"]=df["reviews.title"].apply(lambda x: len(str(x).split(" ")))
+  df["wordcount_reviews.text"]=df["reviews_text"].apply(lambda x: len(str(x).split(" ")))
+  df["wordcount_reviews.title"]=df["reviews_title"].apply(lambda x: len(str(x).split(" ")))
 
 
 def count_chr(): # Number of characters (includes spaces)
-  df["charcount_reviews.text"] = df["reviews.text"].str.len()
-  df["charcount_reviews.title"] = df["reviews.title"].str.len()
+  df["charcount_reviews.text"] = df["reviews_text"].str.len()
+  df["charcount_reviews.title"] = df["reviews_title"].str.len()
 
 
 def avg_word(reviews): # Average Word Length
