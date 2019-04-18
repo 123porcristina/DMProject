@@ -42,11 +42,8 @@ class MainWindowUIClass(Ui_MainWindow):
         '''
         self.lineEditNameFile.setText(self.model.getFileName())
         #self.textEdit.setText(self.model.getFileContents())
-        results = self.model.getFileContents()
+        #results = self.model.getFileContents()
         self.labelTotalRecords.setText(self.model.getFileTotal())
-
-
-
 
         # slot
 
