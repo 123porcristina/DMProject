@@ -27,6 +27,14 @@ def drop_columns(): #Delete columns that are not useful for our dataset
 
     return df.drop(dropcols)
 
+def to_lower_case(): #Lower case
+    df["reviews.text"] = df['reviews.text'].apply(lambda x: " ".join(x.lower() for x in x.split()))
+
+def remove_puntuation(): #Remove Punctuation
+    df["reviews.text"] = df["reviews.text"].str.replace('[^\w\s]',"")
+
+
+
 def text_to_analyze(): #DF with just title and the hotel review
   #text_df = df[['reviews_title', 'reviews_text']].copy()
   text_df = df["reviews_text"].copy()
