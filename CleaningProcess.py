@@ -27,17 +27,26 @@ def drop_columns(): #Delete columns that are not useful for our dataset
 
     return df.drop(dropcols)
 
+def text_to_analyze(): #DF with just title and the hotel review
+  #text_df = df[['reviews_title', 'reviews_text']].copy()
+  text_df = df["reviews_text"].copy()
+  return text_df
+
 
 def noise_removal():
 
 
-def remove_stop_words():
+def stop_words(): #Number of stopwords, need to remove the stop word, but need to how many of them
+  stop=stopwords.words('english')
+  df["stopwords_reviews_text"] = df["reviews_text"].apply(lambda x: len([x for x in str(x).split() if x in stop]))
+  df["stopwords_reviews_title"] = df["reviews_title"].notnull().apply(lambda x: len([x for x in str(x).split() if x in stop]))
 
 
-def train():
-  train_df = pandas.DataFrame()
-  train_df['text'] = texts
-  train_df['label'] = labels
+def remove_stop_w(): #Removal of Stop Words
+  stop = stopwords.words('english')
+  df["reviews_text"] = df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop))
+
+
 
 def cont_neg_feel(): # Number of Words (the negative sentiments contain
                      # a lesser amount of words than the positive ones.)
@@ -48,6 +57,13 @@ def cont_neg_feel(): # Number of Words (the negative sentiments contain
 def count_chr(): # Number of characters (includes spaces)
   df["charcount_reviews.text"] = df["reviews.text"].str.len()
   df["charcount_reviews.title"] = df["reviews.title"].str.len()
+
+
+def avg_word(reviews): # Average Word Length
+  words = str(reviews).split()
+  return (sum(len(word) for word in words)/len(words))
+  df["avgword_reviews.text"] = df["reviews.text"].apply(lambda x: avg_word(x))
+  df["avgword_reviews.title"] = df["reviews.title"].apply(lambda x: avg_word(x))
 
 
 
