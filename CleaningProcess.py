@@ -44,7 +44,7 @@ def stop_words(): #Number of stopwords, need to remove the stop word, but need t
   df["stopwords_reviews_text"] = df["reviews_text"].apply(lambda x: len([x for x in str(x).split() if x in stop]))
   df["stopwords_reviews_title"] = df["reviews_title"].notnull().apply(lambda x: len([x for x in str(x).split() if x in stop]))
 
-def tokenization(text_df):
+def tokenization(text_df): #tokenize into sentences #cristina
     l = text_df.shape[0]
     for w in range(l):
         text_df[w] = word_tokenize(text_df[w])
