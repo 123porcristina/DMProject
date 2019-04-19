@@ -9,7 +9,7 @@ from nltk.corpus import stopwords
 import re
 from nltk.stem import LancasterStemmer, WordNetLemmatizer
 
-#this is uploaded from App.py as df
+#this must be and gotten uploaded from App.py as df
 df = pd.read_csv('datafiniti_hotel_reviews.csv')
 
 #Cleaning of the DataFrame
