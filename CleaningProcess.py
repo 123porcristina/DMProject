@@ -13,73 +13,67 @@ from nltk.stem import LancasterStemmer, WordNetLemmatizer
 df = pd.read_csv('datafiniti_hotel_reviews.csv')
 
 #Cleaning of the DataFrame
-def missing_val(): #Identifing missing values in the dataframe
-
-    df.isnull().values.any() #cristina
-    df["reviews_text"].isna().sum() #Kevin
-    df["reviews_title"].notnull().isna().sum() #Kevin
-    df['reviews_text'] = df['reviews_text'].dropna().reset_index(drop=True)#cristina
-    df['reviews_text'] = df['reviews_text'].astype(str) # To assure all are strings #cristina
-
-
-def drop_columns(): #Delete columns that are not useful for our dataset
-                    #This is our feature selection - Reduce dimension
-
+def drop_columns():  # Delete columns that are not useful for our dataset
+                     # This is our feature selection - Reduce dimension
     dropcols = ['dateupdated', 'address', 'categories', 'keys',
-                'dateadded',  'reviews_dateseen', 'reviews_sourceurls',
+                'dateadded', 'reviews_dateseen', 'reviews_sourceurls',
                 'websites', 'location', 'reviews_username']
-
     return df.drop(dropcols)
 
+def missing_val(): #Identifing missing values in the dataframe
+    df.isnull().values.any() #cristina
+    df["reviews_text"].isna().sum()   #Kevin
+    df["reviews_title"].notnull().isna().sum()   #Kevin
+    df['reviews_text'] = df['reviews_text'].dropna().reset_index(drop=True) #delete NaN and reindex   #cristina
+    df['reviews_text'] = df['reviews_text'].astype(str)  #To assure all are strings #cristina
+
+
 # Preprocessing of texts
-
 def text_to_analyze(): #DF with just title and the hotel review
-  #text_df = df[['reviews_title', 'reviews_text']].copy()
-  text_df = df["reviews_text"].copy() #copy just the text #cristina
-  return text_df
-
-def stop_words(): #Number of stopwords, need to remove the stop word, but need to how many of them
-
-  stop = set(stopwords.words('english'))
-  df["stopwords_reviews_text"] = df["reviews_text"].apply(lambda x: len([x for x in str(x).split() if x in stop]))
-  df["stopwords_reviews_title"] = df["reviews_title"].notnull().apply(lambda x: len([x for x in str(x).split() if x in stop]))
-
-def tokenization(text_df): #tokenize into sentences #cristina
-    l = text_df.shape[0]
-    for w in range(l):
-        text_df[w] = word_tokenize(text_df[w])
+    #text_df = df[['reviews_title', 'reviews_text']].copy()
+    text_df = df["reviews_text"].copy() #copy just the column text_reviews in a new DF #cristina
+    return text_df
 
 def preprocessing():
-    df["reviews.text"] = df['reviews.text'].apply(lambda x: " ".join(x.lower() for x in x.split())) #Lower case
-    df["reviews.text"] = df["reviews.text"].str.replace('[^\w\s]', "") #Remove Punctuation
+    df["reviews_text"] = df['reviews_text'].apply(lambda x: " ".join(x.lower() for x in x.split())) #Lower case
+    df["reviews_text"] = df["reviews_text"].str.replace('[^\w\s]', "") #Remove Punctuation
 
+def tokenization(text_df): #tokenize into sentences #cristina
+    df['reviews_text_token'] = df.apply(lambda row: nltk.word_tokenize(row['reviews_text']), axis=1)
+    # l = text_df.shape[0]
+    # for w in range(l):
+    #     text_df[w] = word_tokenize(text_df[w])
 
-
+def stop_words(): #Number of stopwords, needed to remove the stop word, but need to how many of them
+    stop = set(stopwords.words('english'))
+    df["stopwords_reviews_text"] = df["reviews_text"].apply(lambda x: len([x for x in str(x).split() if x in stop]))
+    df["stopwords_reviews_title"] = df["reviews_title"].notnull().apply(lambda x: len([x for x in str(x).split() if x in stop]))
 
 def remove_stop_w(): #Removal of Stop Words
-  stop = stopwords.words('english')
-  df["reviews_text"] = df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop))
-  #numeric
-  digits = r"\d+"
+    stop = stopwords.words('english')
+    df["reviews_text"] = df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop))
+    #numeric
+    digits = r"\d+"
 
+def common_words():
 
 
 def cont_neg_feel(): # Number of Words (the negative sentiments contain
                      # a lesser amount of words than the positive ones.)
-  df["wordcount_reviews.text"]=df["reviews_text"].apply(lambda x: len(str(x).split(" ")))
-  df["wordcount_reviews.title"]=df["reviews_title"].apply(lambda x: len(str(x).split(" ")))
+    df["wordcount_reviews.text"]=df["reviews_text"].apply(lambda x: len(str(x).split(" ")))
+    df["wordcount_reviews.title"]=df["reviews_title"].apply(lambda x: len(str(x).split(" ")))
 
 
 def count_chr(): # Number of characters (includes spaces)
-  df["charcount_reviews.text"] = df["reviews_text"].str.len()
-  df["charcount_reviews.title"] = df["reviews_title"].str.len()
+    df["charcount_reviews.text"] = df["reviews_text"].str.len()
+    df["charcount_reviews.title"] = df["reviews_title"].str.len()
 
 
 def avg_word(reviews): # Average Word Length
-  words = str(reviews).split()
-  return (sum(len(word) for word in words)/len(words))
-  df["avgword_reviews.text"] = df["reviews.text"].apply(lambda x: avg_word(x))
-  df["avgword_reviews.title"] = df["reviews.title"].apply(lambda x: avg_word(x))
+    words = str(reviews).split()
+    return (sum(len(word) for word in words)/len(words))
+    df["avgword_reviews.text"] = df["reviews.text"].apply(lambda x: avg_word(x))
+    df["avgword_reviews.title"] = df["reviews.title"].apply(lambda x: avg_word(x))
 
 
 
