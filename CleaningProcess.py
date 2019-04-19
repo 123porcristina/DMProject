@@ -27,7 +27,6 @@ def missing_val(): #Identifing missing values in the dataframe
     df['reviews_text'] = df['reviews_text'].dropna().reset_index(drop=True) #delete NaN and reindex   #cristina
     df['reviews_text'] = df['reviews_text'].astype(str)  #To assure all are strings #cristina
 
-
 # Preprocessing of texts
 def text_to_analyze(): #DF with just title and the hotel review
     #text_df = df[['reviews_title', 'reviews_text']].copy()
@@ -45,6 +44,7 @@ def tokenization(text_df): #tokenize into sentences #cristina
     #     text_df[w] = word_tokenize(text_df[w])
 
 def stop_words(): #Number of stopwords, needed to remove the stop word, but need to how many of them
+    no_stops = [t for t in (df['reviews_text_token']) if t not in stopwords.words('english')] #gets no stop words#cristina
     stop = set(stopwords.words('english'))
     df["stopwords_reviews_text"] = df["reviews_text"].apply(lambda x: len([x for x in str(x).split() if x in stop]))
     df["stopwords_reviews_title"] = df["reviews_title"].notnull().apply(lambda x: len([x for x in str(x).split() if x in stop]))
