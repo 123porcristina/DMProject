@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
+import textblob
 
 # this must be and gotten uploaded from App.py as df
 df = pd.read_csv('datafiniti_hotel_reviews.csv')
@@ -47,6 +48,9 @@ def tokenization(text_df):  # tokenize into sentences #cristina
     # l = text_df.shape[0]
     # for w in range(l):
     #     text_df[w] = word_tokenize(text_df[w])
+
+def lemmatization(): # converts the word into its root word
+    df["reviews_text"]=df["reviews_text"].apply(lambda x: " ".join([Word(word).lemmatize() for word in x.split()]))
 
 
 def stop_words():  # Number of stopwords, needed to remove the stop word, but need to how many of them
