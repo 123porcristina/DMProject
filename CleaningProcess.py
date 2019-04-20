@@ -8,7 +8,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
-import textblob
 
 
 
@@ -49,17 +48,11 @@ class PreprocessReview:
                                                     axis=1)  # tokenization #cristina
         return self.pr_df
 
-# <<<<<<< HEAD
-# def lemmatization(): # converts the word into its root word
-#     df["reviews_text"]=df["reviews_text"].apply(lambda x: " ".join([Word(word).lemmatize() for word in x.split()]))
-#
-# =======
-#     def common_words(self):  # most frequent words #cristina: I have to fix this.
-#         for i in range(len(self.pr_df['reviews_text_token'])):
-#             fdist = FreqDist(self.pr_df.loc[i, "reviews_text_token"])
-#             # return fdist.most_common(10)
-#             return fdist
-# >>>>>>> 75b8a68a5b4620ec45b8cd5aa3a222faf6e6cf83
+    def common_words(self):  # most frequent words #cristina: I have to fix this.
+        for i in range(len(self.pr_df['reviews_text_token'])):
+            fdist = FreqDist(self.pr_df.loc[i, "reviews_text_token"])
+            # return fdist.most_common(10)
+            return fdist
 
     def remove_stop_w(self):
         stop_words = stopwords.words('english')
@@ -110,7 +103,6 @@ class Predictors:
         pred = nb_classifier.predict(count_test)
         metrics.accuracy_score(y_test, pred)
         metrics.confusion_matrix(y_test, pred, labels=[1, 2, 3, 4, 5])
-
 
 
 def main():
@@ -256,18 +248,7 @@ main()
 #
 
 
-# def SupportVectorMachine(self):
-#     y=self.f_df.label
-#     X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'], y, test_size=0.25, random_state=53)
-#     count_vectorizer = CountVectorizer(stop_words='english')
-#     count_train = count_vectorizer.fit_transform(X_train.values)
-#     count_test = count_vectorizer.transform(X_test.values)
-#
-#     # fit the training dataset on the classifier
-#     SVM_classifier = svm.SVC(C=1.0, kernel='linear', degree=3, gamma='auto')
-#     SVM_classifier.fit(count_train, y_train)
-#     pred = SVM_classifier.predict(count_test)
-#     metrics.accuracy_score(y_test, pred) * 100
+
 
 
 # #df = pd.read_csv("Datafiniti_Hotel_Reviews.csv")
