@@ -12,7 +12,7 @@ from textblob import TextBlob, Word
 import matplotlib.pyplot as plt
 import seaborn as sns
 import re, string, unicodedata
-
+from sklearn.svm import SVC
 
 
 
@@ -89,6 +89,11 @@ class PreprocessReview:
         self.pr_df["charcount_reviews.text"] = self.pr_df["reviews_text"].str.len()
         self.pr_df["charcount_reviews.title"] = self.pr_df["reviews_title"].str.len()
 
+    def recategorized_rating(self):
+        #Kevin. convert rating into low(x >= 0,x < 3),moderate(x >= 3 and x < 5), high(5)
+        self.pr_df["New_reviews_rating"] = self.pr_df["reviews_rating"].apply(
+            lambda x: 1 if x >= 0 and x < 3 else (2 if x >= 3 and x < 5 else 3))
+
     # def avg_word(self, reviews): # Average Word Length
     # ords = str(reviews).split()
     # return (sum(len(word) for word in words) / len(words))
@@ -161,6 +166,17 @@ class Predictors:
                 break
             counter += 1
         return metrics.accuracy_score(y_test, pred)
+    #Kevin. SVM Model
+    def svm_apply(self):
+        X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'], self.f_df['reviews_rating'].astype('int'), test_size=0.25, random_state=53)
+        count_vectorizer = CountVectorizer()
+        count_train = count_vectorizer.fit_transform(X_train.values)
+        count_test = count_vectorizer.transform(X_test.values)
+        SVM = SVC(C=1.0, kernel='poly', degree=3, gamma='auto')
+        SVM.fit(count_train, y_train)
+        predictions_SVM = SVM.predict(count_test)
+        return metrics.accuracy_score(predictions_SVM, y_test)
+
 
 
 def main():
@@ -176,8 +192,6 @@ def main():
     df = clean_text.clean_split_text()                    # Converts to lower case, removes punctuation and tokenize reviews_text
 
     clean_text.common_words(df['reviews_text'],25)        # Call before remove stop words to get the frequency before
-
-
 
     # Renzo - Changes start
     df = clean_text.remove_stop_w2()                      # Renzo. It removes stop words from reviews_text
@@ -196,9 +210,12 @@ def main():
 
     df = clean_text.lematization()                      #Renzo, converts the word into its root word
 
-    predictor = Predictors(df)                            # Cristina. instance class Predictors()
-    prediction = predictor.naivesb()                      # Cristina. calls model naives bayes
-    print(prediction)
+    predictor = Predictors(df)                          # Cristina. instance class Predictors()
+    prediction_NB = predictor.naivesb()                 # Cristina. calls model naives bayes
+    print(prediction_NB)
+    prediction_SVM = predictor.svm_apply()              #Kevin. calls model SVM
+    print(prediction_SVM)
+
 
 main()
 
