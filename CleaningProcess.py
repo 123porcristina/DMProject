@@ -15,14 +15,16 @@ class CleaningDF:
     def __init__(self, p_df):
         self.p_df = p_df
 
+    def get_info(self):
+        return self.p_df.info()
+
     def drop_columns(self):  # deletes unnecessay features
-        dropcols = ['dateupdated', 'address', 'categories', 'keys',
-                    'dateadded', 'reviews_dateseen', 'reviews_sourceurls',
-                    'websites', 'location', 'reviews_username']
+        dropcols = ['id', 'dateadded', 'dateupdated', 'address', 'categories', 'primarycategories', 'keys', 'latitude',
+                    'longitude', 'postalcode', 'reviews_date', 'reviews_dateseen', 'reviews_sourceurls',
+                    'reviews_usercity', 'reviews_userprovince', 'reviews_username', 'sourceurls', 'websites', 'location']
+
         self.p_df= self.p_df.drop(dropcols, axis=1)
         return self.p_df
-
-        #return self.p_df.drop(dropcols, axis=1)
 
     def missing_val(self):
         self.p_df.isnull().values.any()  # cristina
@@ -52,7 +54,6 @@ class PreprocessReview:
         freq = pd.Series(" ".join(self.wfilter).split()).value_counts()[:10]
         return freq
 
-
     def remove_stop_w(self):
         stop_words = stopwords.words('english')
         # df["reviews_text"] = df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop))
@@ -64,8 +65,6 @@ class PreprocessReview:
                 if w not in stop_words:
                     filtered_words.append(w)
         return filtered_words
-
-
 
     def cont_neg_feel(self):
         # Number of Words (the negative sentiments contain
@@ -120,7 +119,7 @@ def main():
     fcw = clean_text.common_words(fw)                  # call after remove stop words to get the new frequency
 
     predictor = Predictors(df)                          # instance class Predictors()
-    prediction = predictor.naivesb()                    # calls model naives bayes
+    # prediction = predictor.naivesb()                    # calls model naives bayes
 
 
 main()
