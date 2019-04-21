@@ -9,7 +9,9 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
 import matplotlib.pyplot as plt
 import seaborn as sns
-import plotly
+import re, string, unicodedata
+from sklearn.svm import SVC
+
 
 class CleaningDF:
 
@@ -34,7 +36,7 @@ class CleaningDF:
         self.p_df["reviews_title"].notnull().isna().sum()  # Kevin
         self.p_df['reviews_text'] = self.p_df['reviews_text'].dropna().reset_index(
             drop=True)  # delete NaN and reindex   #cristina
-        self.p_df['reviews_text'] = self.p_df['reviews_text'].astype(str)  # To assure all are strings #cristina
+        self.p_df['reviews_text'] = self.p_df['reviews_text'].astype(str)  # Cristina. To assure all are strings
         return self.p_df
 
 
@@ -47,9 +49,14 @@ class PreprocessReview:
         self.pr_df["reviews_text"] = self.pr_df['reviews_text'].apply(
             lambda x: " ".join(x.lower() for x in x.split()))  # lower case kevin
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('[^\w\s]', "")  # puntuation kevin
-        #cristina. tokenization
-        self.pr_df['reviews_text_token'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']),axis=1)
+
         return self.pr_df
+
+    # cristina. tokenization - separates words
+    def tokenization(self):
+        self.pr_df['reviews_text_token'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']), axis=1)
+        return self.pr_df
+
 
     # cristina. Most frequent words
     def common_words(self, wfilter, n_words):
@@ -59,27 +66,35 @@ class PreprocessReview:
         all_words = ' '.join([text for text in wfilter])
         all_words = all_words.split()
 
+        #get word frequency
         fdist = FreqDist(all_words)
-        words_df = pd.DataFrame({'word': list(fdist.keys()), 'count': list(fdist.values())})
+        words_df = pd.DataFrame({'word': list(fdist.keys()), 'count': list(fdist.values())}) #converts to df
 
-        # selecting top #terms most frequent words
+        # selecting top #terms most frequent words and plot
         d = words_df.nlargest(columns="count", n=self.n_words)
         plt.figure(figsize=(20, 5))
         ax = sns.barplot(data=d, x="word", y="count")
         ax.set(ylabel='Count')
         plt.show()
 
-
+    # Kevin
     def cont_neg_feel(self):
         # Number of Words (the negative sentiments contain
         # a lesser amount of words than the positive ones.)
         self.pr_df["wordcount_reviews.text"] = self.pr_df["reviews_text"].apply(lambda x: len(str(x).split(" ")))
         self.pr_df["wordcount_reviews.title"] = self.pr_df["reviews_title"].apply(lambda x: len(str(x).split(" ")))
 
+    # Kevin
     def count_chr(self):
         # Number of characters (includes spaces)
         self.pr_df["charcount_reviews.text"] = self.pr_df["reviews_text"].str.len()
         self.pr_df["charcount_reviews.title"] = self.pr_df["reviews_title"].str.len()
+
+    # Kevin
+    def recategorized_rating(self):
+        #Kevin. convert rating into low(x >= 0,x < 3),moderate(x >= 3 and x < 5), high(5)
+        self.pr_df["New_reviews_rating"] = self.pr_df["reviews_rating"].apply(
+            lambda x: 1 if x >= 0 and x < 3 else (2 if x >= 3 and x < 5 else 3))
 
     # def avg_word(self, reviews): # Average Word Length
     # ords = str(reviews).split()
@@ -137,7 +152,18 @@ class Predictors:
             counter += 1
         return metrics.accuracy_score(y_test, pred)
 
+    #Kevin. SVM Model
+    def svm_apply(self):
+        X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'], self.f_df['reviews_rating'].astype('int'), test_size=0.25, random_state=53)
+        count_vectorizer = CountVectorizer()
+        count_train = count_vectorizer.fit_transform(X_train.values)
+        count_test = count_vectorizer.transform(X_test.values)
+        SVM = SVC(C=1.0, kernel='poly', degree=3, gamma='auto')
+        SVM.fit(count_train, y_train)
+        predictions_SVM = SVM.predict(count_test)
+        return metrics.accuracy_score(predictions_SVM, y_test)
 
+def main():
 
     # this must be gotten from the upload in App.py as df
     df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
@@ -164,12 +190,26 @@ class Predictors:
     print(df[['reviews_text']])
     #Renzo - Changes end
 
-    predictor = Predictors( )                         # Cristina. instance class Predictors()
-    prediction = predictor.naivesb()                      # Cristina. calls model naives bayes
-    print(prediction)
+
+    #Renzo. Slow process. to validate if we will use it
+    #df = clean_text.spelling_correction()               #Renzo. This will do the spelling correction
+    #print(df[['reviews_text']])
+
+    df = clean_text.tokenization()
+
+    # df = clean_text.tokenization()                      #Renzo. convert text to string.
+
+    df = clean_text.lematization()                      #Renzo, converts the word into its root word
+
+    predictor = Predictors(df)                          # Cristina. instance class Predictors()
+    prediction_NB = predictor.naivesb()                 # Cristina. calls model naives bayes
+    print(prediction_NB)
+    prediction_SVM = predictor.svm_apply()              #Kevin. calls model SVM
+    print(prediction_SVM)
 
 
-# main()
+
+main()
 
 
 
