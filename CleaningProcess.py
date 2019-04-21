@@ -8,6 +8,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 class CleaningDF:
@@ -23,7 +25,7 @@ class CleaningDF:
                     'longitude', 'postalcode', 'reviews_date', 'reviews_dateseen', 'reviews_sourceurls',
                     'reviews_usercity', 'reviews_userprovince', 'reviews_username', 'sourceurls', 'websites', 'location']
 
-        self.p_df= self.p_df.drop(dropcols, axis=1)
+        self.p_df = self.p_df.drop(dropcols, axis=1)
         return self.p_df
 
     def missing_val(self):
@@ -49,22 +51,24 @@ class PreprocessReview:
                                                     axis=1)  # tokenization #cristina
         return self.pr_df
 
-    def common_words(self, wfilter):  # most frequent words
-        self.wfilter = wfilter
-        freq = pd.Series(" ".join(self.wfilter).split()).value_counts()[:10]
-        return freq
+    #cristina
+    def common_words(self, wfilter, n_words):  # most frequent words
 
-    def remove_stop_w(self):
-        stop_words = stopwords.words('english')
-        # df["reviews_text"] = df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop))
+        self.filter = wfilter
+        self.n_words = n_words
+        all_words = ' '.join([text for text in wfilter])
+        all_words = all_words.split()
 
-        # cristina #It removes stop_words and return an array filtered
-        filtered_words = []
-        for i in range(self.pr_df.shape[0]):
-            for w in self.pr_df.loc[i, "reviews_text_token"]:
-                if w not in stop_words:
-                    filtered_words.append(w)
-        return filtered_words
+        fdist = FreqDist(all_words)
+        words_df = pd.DataFrame({'word': list(fdist.keys()), 'count': list(fdist.values())})
+
+        # selecting top #terms most frequent words
+        d = words_df.nlargest(columns="count", n=self.n_words)
+        plt.figure(figsize=(20, 5))
+        ax = sns.barplot(data=d, x="word", y="count")
+        ax.set(ylabel='Count')
+        plt.show()
+
 
     def cont_neg_feel(self):
         # Number of Words (the negative sentiments contain
@@ -106,7 +110,6 @@ class PreprocessReview:
 
 
 
-
 class Predictors:
     def __init__(self, f_df):
         self.f_df = f_df
@@ -137,13 +140,13 @@ def main():
     clean_text = PreprocessReview(df)                  # instance class PreprocessReview()
     df = clean_text.clean_split_text()                 # Converts to lower case, removes punctuation and tokenize reviews_text
 
-    cw = clean_text.common_words(df['reviews_text'])   # Call before remove stop words to get the frequency before
+    cw = clean_text.common_words(df['reviews_text'],25)   # Call before remove stop words to get the frequency before
 
     #Renzo - Changes start
     df = clean_text.remove_stop_w2()                    # Renzo. It removes stop words from reviews_text
     print(df[['reviews_text']])
 
-    fcw = clean_text.common_words(df)                  # call after remove stop words to get the new frequency
+    fcw = clean_text.common_words(df['reviews_text'],25)                  # call after remove stop words to get the new frequency
 
     cwc = clean_text.count_rare_word()                  #Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
     print(cwc)
