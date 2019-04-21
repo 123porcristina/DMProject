@@ -45,14 +45,14 @@ class PreprocessReview:
 
     def clean_split_text(self):  # convert to lower case, remove punctuation, tokenize
         self.pr_df["reviews_text"] = self.pr_df['reviews_text'].apply(
-            lambda x: " ".join(x.lower() for x in x.split()))  # lower case
-        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('[^\w\s]', "")  # puntuation
-        self.pr_df['reviews_text_token'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']),
-                                                    axis=1)  # tokenization #cristina
+            lambda x: " ".join(x.lower() for x in x.split()))  # lower case kevin
+        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('[^\w\s]', "")  # puntuation kevin
+        #cristina. tokenization
+        self.pr_df['reviews_text_token'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']),axis=1)
         return self.pr_df
 
-    #cristina
-    def common_words(self, wfilter, n_words):  # most frequent words
+    #cristina. Most frequent words
+    def common_words(self, wfilter, n_words):
 
         self.filter = wfilter
         self.n_words = n_words
@@ -91,6 +91,8 @@ class PreprocessReview:
     def remove_stop_w2(self):
         stop_words = stopwords.words('english')
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop_words))
+        #Cristina. Get ride of numbers
+        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('\d+', '')
         return self.pr_df
 
 
@@ -106,8 +108,6 @@ class PreprocessReview:
         freq = list(freq.index)
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in freq))
         return self.pr_df
-
-
 
 
 class Predictors:
