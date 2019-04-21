@@ -1,5 +1,4 @@
 import pandas as pd
-import re, string, unicodedata
 import nltk
 from nltk import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
@@ -20,7 +19,8 @@ class CleaningDF:
     def get_info(self):
         return self.p_df.info()
 
-    def drop_columns(self):  # deletes unnecessay features
+    # cristina. deletes unnecessay features
+    def drop_columns(self):
         dropcols = ['id', 'dateadded', 'dateupdated', 'address', 'categories', 'primarycategories', 'keys', 'latitude',
                     'longitude', 'postalcode', 'reviews_date', 'reviews_dateseen', 'reviews_sourceurls',
                     'reviews_usercity', 'reviews_userprovince', 'reviews_username', 'sourceurls', 'websites', 'location']
@@ -51,7 +51,7 @@ class PreprocessReview:
         self.pr_df['reviews_text_token'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']),axis=1)
         return self.pr_df
 
-    #cristina. Most frequent words
+    # cristina. Most frequent words
     def common_words(self, wfilter, n_words):
 
         self.filter = wfilter
@@ -87,7 +87,7 @@ class PreprocessReview:
     # self.pr_df["avgword_reviews.text"] = self.pr_df["reviews.text"].apply(lambda x: avg_word(x))
     # self.pr_df["avgword_reviews.title"] = self.pr_df["reviews.title"].apply(lambda x: avg_word(x))
 
-    #renzo . Remove stop words and reassign to the same column
+    # renzo . Remove stop words and reassign to the same column
     def remove_stop_w2(self):
         stop_words = stopwords.words('english')
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop_words))
@@ -96,13 +96,13 @@ class PreprocessReview:
         return self.pr_df
 
 
-    #renzo. Count the lest frequent words
+    # renzo. Count the lest frequent words
     def count_rare_word(self):
         freq = pd.Series(" ".join(self.pr_df['reviews_text']).split()).value_counts()[-15:]
         # freq = pd.Series(' '.join(train['tweet']).split()).value_counts()[-10:]
         return freq
 
-    #renzo . Remove rare words
+    # renzo . Remove rare words
     def remove_rare_words(self):
         freq = pd.Series(" ".join(self.pr_df['reviews_text']).split()).value_counts()[-15:]
         freq = list(freq.index)
@@ -114,18 +114,28 @@ class Predictors:
     def __init__(self, f_df):
         self.f_df = f_df
 
-    def naivesb(self): #Cristina: I have to fix this
-        y = self.f_df.label
-        X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'], y, test_size=0.25, random_state=53)
-        count_vectorizer = CountVectorizer(stop_words='english')  # converts to bags of words and it would remove stop words
+    #Cristina. Model and evaluation
+    def naivesb(self):
+        X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'],
+                                                            self.f_df['reviews_rating'].astype('int'),
+                                                            test_size=0.25, random_state=85)
+        count_vectorizer = CountVectorizer()  # converts to bags of words and it would remove stop words
+
         count_train = count_vectorizer.fit_transform(X_train.values)
         count_test = count_vectorizer.transform(X_test.values)
 
         nb_classifier = MultinomialNB()
         nb_classifier.fit(count_train, y_train)
         pred = nb_classifier.predict(count_test)
-        metrics.accuracy_score(y_test, pred)
+        print(metrics.accuracy_score(y_test, pred))
         metrics.confusion_matrix(y_test, pred, labels=[1, 2, 3, 4, 5])
+        counter = 0
+        for review, category in zip(X_test, pred):
+            print('%r => %s' % (review, category))
+            if (counter == 40):
+                break
+            counter += 1
+        return metrics.accuracy_score(y_test, pred)
 
 
 def main():
@@ -133,31 +143,32 @@ def main():
     # this must be gotten from the upload in App.py as df
     df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
 
-    clean = CleaningDF(df_file)                        # instance class CleaningDF()
-    df = clean.drop_columns()                          # drop features that are not necessary for the analysis
-    df = clean.missing_val()                           # verify and clean missing values and converts to string reviews_text
+    clean = CleaningDF(df_file)                           # instance class CleaningDF()
+    df = clean.drop_columns()                             # drop features that are not necessary for the analysis
+    df = clean.missing_val()                              # verify and clean missing values and converts to string reviews_text
 
-    clean_text = PreprocessReview(df)                  # instance class PreprocessReview()
-    df = clean_text.clean_split_text()                 # Converts to lower case, removes punctuation and tokenize reviews_text
+    clean_text = PreprocessReview(df)                     # instance class PreprocessReview()
+    df = clean_text.clean_split_text()                    # Converts to lower case, removes punctuation and tokenize reviews_text
 
-    cw = clean_text.common_words(df['reviews_text'],25)   # Call before remove stop words to get the frequency before
+    clean_text.common_words(df['reviews_text'],25)        # Call before remove stop words to get the frequency before
 
-    #Renzo - Changes start
-    df = clean_text.remove_stop_w2()                    # Renzo. It removes stop words from reviews_text
+    # Renzo - Changes start
+    df = clean_text.remove_stop_w2()                      # Renzo. It removes stop words from reviews_text
     print(df[['reviews_text']])
 
-    fcw = clean_text.common_words(df['reviews_text'],25)                  # call after remove stop words to get the new frequency
+    clean_text.common_words(df['reviews_text'],25)        # call after remove stop words to get the new frequency
 
-    cwc = clean_text.count_rare_word()                  #Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
+    cwc = clean_text.count_rare_word()                    # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
     print(cwc)
 
-    df = clean_text.remove_rare_words()                #Renzo. This will clean the rare words from the reviews column
+    df = clean_text.remove_rare_words()                   # Renzo. This will clean the rare words from the reviews column
     print(df[['reviews_text']])
     #Renzo - Changes end
 
 
-    predictor = Predictors(df)                          # instance class Predictors()
-    # prediction = predictor.naivesb()                    # calls model naives bayes
+    predictor = Predictors(df)                            # Cristina. instance class Predictors()
+    prediction = predictor.naivesb()                      # Cristina. calls model naives bayes
+    print(prediction)
 
 
 main()
