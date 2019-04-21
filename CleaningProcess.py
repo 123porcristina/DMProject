@@ -10,7 +10,6 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
 
 
-
 class CleaningDF:
 
     def __init__(self, p_df):
@@ -48,26 +47,25 @@ class PreprocessReview:
                                                     axis=1)  # tokenization #cristina
         return self.pr_df
 
-    def common_words(self):  # most frequent words #cristina: I have to fix this.
-        for i in range(len(self.pr_df['reviews_text_token'])):
-            fdist = FreqDist(self.pr_df.loc[i, "reviews_text_token"])
-            # return fdist.most_common(10)
-            return fdist
+    def common_words(self, wfilter):  # most frequent words
+        self.wfilter = wfilter
+        freq = pd.Series(" ".join(self.wfilter).split()).value_counts()[:10]
+        return freq
+
 
     def remove_stop_w(self):
         stop_words = stopwords.words('english')
         # df["reviews_text"] = df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop))
 
         # cristina #It removes stop_words and return an array filtered
-        filtered_sent = []
         filtered_words = []
         for i in range(self.pr_df.shape[0]):
             for w in self.pr_df.loc[i, "reviews_text_token"]:
                 if w not in stop_words:
-                    filtered_sent.append(w)
-            filtered_words.append(filtered_sent)
-            filtered_sent = []
+                    filtered_words.append(w)
         return filtered_words
+
+
 
     def cont_neg_feel(self):
         # Number of Words (the negative sentiments contain
@@ -110,19 +108,19 @@ def main():
     # this must be gotten from the upload in App.py as df
     df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
 
-    clean = CleaningDF(df_file)             # instance class CleaningDF()
-    df = clean.drop_columns()               # drop features that are not necessary for the analysis
-    df = clean.missing_val()                # verify and clean missing values and converts to string reviews_text
+    clean = CleaningDF(df_file)                        # instance class CleaningDF()
+    df = clean.drop_columns()                          # drop features that are not necessary for the analysis
+    df = clean.missing_val()                           # verify and clean missing values and converts to string reviews_text
 
-    clean_text = PreprocessReview(df)       # instance class PreprocessReview()
-    df = clean_text.clean_split_text()      # Converts to lower case, removes punctuation and tokenize reviews_text
+    clean_text = PreprocessReview(df)                  # instance class PreprocessReview()
+    df = clean_text.clean_split_text()                 # Converts to lower case, removes punctuation and tokenize reviews_text
 
-    cw = clean_text.common_words()          # Call before remove stop words to get the frequency before
-    df_filter = clean_text.remove_stop_w()  # It removes stop words from reviews_text
-    fcw = clean_text.common_words()         # call after remove stop words to get the new frequency
+    cw = clean_text.common_words(df['reviews_text'])   # Call before remove stop words to get the frequency before
+    fw = clean_text.remove_stop_w()                    # It removes stop words from reviews_text
+    fcw = clean_text.common_words(fw)                  # call after remove stop words to get the new frequency
 
-    predictor = Predictors(df)              # instance class Predictors()
-    prediction = predictor.naivesb()        # calls model naives bayes
+    predictor = Predictors(df)                          # instance class Predictors()
+    prediction = predictor.naivesb()                    # calls model naives bayes
 
 
 main()
