@@ -1,13 +1,22 @@
 import pandas as pd
-import re, string, unicodedata
 import nltk
 from nltk import word_tokenize, sent_tokenize
+from nltk.stem import PorterStemmer, LancasterStemmer
 from nltk.corpus import stopwords
 from nltk.probability import FreqDist
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
+from textblob import TextBlob, Word
+import matplotlib.pyplot as plt
+import seaborn as sns
+import re, string, unicodedata
+
+
+
+
+
 
 
 class CleaningDF:
@@ -15,14 +24,17 @@ class CleaningDF:
     def __init__(self, p_df):
         self.p_df = p_df
 
-    def drop_columns(self):  # deletes unnecessay features
-        dropcols = ['dateupdated', 'address', 'categories', 'keys',
-                    'dateadded', 'reviews_dateseen', 'reviews_sourceurls',
-                    'websites', 'location', 'reviews_username']
-        self.p_df= self.p_df.drop(dropcols, axis=1)
-        return self.p_df
+    def get_info(self):
+        return self.p_df.info()
 
-        #return self.p_df.drop(dropcols, axis=1)
+    # cristina. deletes unnecessay features
+    def drop_columns(self):
+        dropcols = ['id', 'dateadded', 'dateupdated', 'address', 'categories', 'primarycategories', 'keys', 'latitude',
+                    'longitude', 'postalcode', 'reviews_date', 'reviews_dateseen', 'reviews_sourceurls',
+                    'reviews_usercity', 'reviews_userprovince', 'reviews_username', 'sourceurls', 'websites', 'location']
+
+        self.p_df = self.p_df.drop(dropcols, axis=1)
+        return self.p_df
 
     def missing_val(self):
         self.p_df.isnull().values.any()  # cristina
@@ -41,30 +53,29 @@ class PreprocessReview:
 
     def clean_split_text(self):  # convert to lower case, remove punctuation, tokenize
         self.pr_df["reviews_text"] = self.pr_df['reviews_text'].apply(
-            lambda x: " ".join(x.lower() for x in x.split()))  # lower case
-        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('[^\w\s]', "")  # puntuation
-        self.pr_df['reviews_text_token'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']),
-                                                    axis=1)  # tokenization #cristina
+            lambda x: " ".join(x.lower() for x in x.split()))  # lower case kevin
+        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('[^\w\s]', "")  # puntuation kevin
+        #cristina. tokenization
+        self.pr_df['reviews_text_token'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']),axis=1)
         return self.pr_df
 
-    def common_words(self, wfilter):  # most frequent words
-        self.wfilter = wfilter
-        freq = pd.Series(" ".join(self.wfilter).split()).value_counts()[:10]
-        return freq
+    # cristina. Most frequent words
+    def common_words(self, wfilter, n_words):
 
+        self.filter = wfilter
+        self.n_words = n_words
+        all_words = ' '.join([text for text in wfilter])
+        all_words = all_words.split()
 
-    def remove_stop_w(self):
-        stop_words = stopwords.words('english')
-        # df["reviews_text"] = df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop))
+        fdist = FreqDist(all_words)
+        words_df = pd.DataFrame({'word': list(fdist.keys()), 'count': list(fdist.values())})
 
-        # cristina #It removes stop_words and return an array filtered
-        filtered_words = []
-        for i in range(self.pr_df.shape[0]):
-            for w in self.pr_df.loc[i, "reviews_text_token"]:
-                if w not in stop_words:
-                    filtered_words.append(w)
-        return filtered_words
-
+        # selecting top #terms most frequent words
+        d = words_df.nlargest(columns="count", n=self.n_words)
+        plt.figure(figsize=(20, 5))
+        ax = sns.barplot(data=d, x="word", y="count")
+        ax.set(ylabel='Count')
+        plt.show()
 
 
     def cont_neg_feel(self):
@@ -84,23 +95,72 @@ class PreprocessReview:
     # self.pr_df["avgword_reviews.text"] = self.pr_df["reviews.text"].apply(lambda x: avg_word(x))
     # self.pr_df["avgword_reviews.title"] = self.pr_df["reviews.title"].apply(lambda x: avg_word(x))
 
+    #renzo . Remove stop words and reassign to the same column
+    def remove_stop_w2(self):
+        stop_words = stopwords.words('english')
+        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop_words))
+        return self.pr_df
+
+
+    #renzo. Count the lest frequent words
+    def count_rare_word(self):
+        freq = pd.Series(" ".join(self.pr_df['reviews_text']).split()).value_counts()[-15:]
+        # freq = pd.Series(' '.join(train['tweet']).split()).value_counts()[-10:]
+        return freq
+
+    #renzo . Remove rare words
+    def remove_rare_words(self):
+        freq = pd.Series(" ".join(self.pr_df['reviews_text']).split()).value_counts()[-15:]
+        freq = list(freq.index)
+        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in freq))
+        return self.pr_df
+
+
+    #Renzo. Spelling correction
+    def spelling_correction(self):
+        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: str(TextBlob(x).correct()))
+        return self.pr_df
+
+    #Renzo. converts the word into its root word
+    def lematization(self):
+        porter = PorterStemmer()
+        lancaster = LancasterStemmer()
+        self.pr_df["reviews_text_token2"] = self.pr_df["reviews_text_token2"].apply(lambda x: [lancaster.stem(y) for y in x])
+        # self.pr_df["reviews_text_token2"] = self.pr_df["reviews_text_2"].apply(lambda x: " ".join([Word(word).lemmatize() for word in x.split()]))
+        return self.pr_df
+
+
+    #Renzo. Tokenize function. To use after the text depuration
+    def tokenization(self):
+        self.pr_df['reviews_text_token2'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']),axis=1)
+        return self.pr_df
 
 class Predictors:
     def __init__(self, f_df):
         self.f_df = f_df
 
-    def naivesb(self): #Cristina: I have to fix this
-        y = self.f_df.label
-        X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'], y, test_size=0.25, random_state=53)
-        count_vectorizer = CountVectorizer(stop_words='english')  # converts to bags of words and it would remove stop words
+    #Cristina. Model and evaluation
+    def naivesb(self):
+        X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'],
+                                                            self.f_df['reviews_rating'].astype('int'),
+                                                            test_size=0.25, random_state=85)
+        count_vectorizer = CountVectorizer()  # converts to bags of words and it would remove stop words
+
         count_train = count_vectorizer.fit_transform(X_train.values)
         count_test = count_vectorizer.transform(X_test.values)
 
         nb_classifier = MultinomialNB()
         nb_classifier.fit(count_train, y_train)
         pred = nb_classifier.predict(count_test)
-        metrics.accuracy_score(y_test, pred)
+        print(metrics.accuracy_score(y_test, pred))
         metrics.confusion_matrix(y_test, pred, labels=[1, 2, 3, 4, 5])
+        counter = 0
+        for review, category in zip(X_test, pred):
+            print('%r => %s' % (review, category))
+            if (counter == 40):
+                break
+            counter += 1
+        return metrics.accuracy_score(y_test, pred)
 
 
 def main():
@@ -108,20 +168,37 @@ def main():
     # this must be gotten from the upload in App.py as df
     df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
 
-    clean = CleaningDF(df_file)                        # instance class CleaningDF()
-    df = clean.drop_columns()                          # drop features that are not necessary for the analysis
-    df = clean.missing_val()                           # verify and clean missing values and converts to string reviews_text
+    clean = CleaningDF(df_file)                           # instance class CleaningDF()
+    df = clean.drop_columns()                             # drop features that are not necessary for the analysis
+    df = clean.missing_val()                              # verify and clean missing values and converts to string reviews_text
 
-    clean_text = PreprocessReview(df)                  # instance class PreprocessReview()
-    df = clean_text.clean_split_text()                 # Converts to lower case, removes punctuation and tokenize reviews_text
+    clean_text = PreprocessReview(df)                     # instance class PreprocessReview()
+    df = clean_text.clean_split_text()                    # Converts to lower case, removes punctuation and tokenize reviews_text
 
-    cw = clean_text.common_words(df['reviews_text'])   # Call before remove stop words to get the frequency before
-    fw = clean_text.remove_stop_w()                    # It removes stop words from reviews_text
-    fcw = clean_text.common_words(fw)                  # call after remove stop words to get the new frequency
+    clean_text.common_words(df['reviews_text'],25)        # Call before remove stop words to get the frequency before
 
-    predictor = Predictors(df)                          # instance class Predictors()
-    prediction = predictor.naivesb()                    # calls model naives bayes
 
+
+    # Renzo - Changes start
+    df = clean_text.remove_stop_w2()                      # Renzo. It removes stop words from reviews_text
+
+    clean_text.common_words(df['reviews_text'],25)        # call after remove stop words to get the new frequency
+
+    cwc = clean_text.count_rare_word()                    # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
+
+    df = clean_text.remove_rare_words()                   # Renzo. This will clean the rare words from the reviews column
+
+    #Renzo. Slow process. to validate if we will use it
+    #df = clean_text.spelling_correction()               #Renzo. This will do the spelling correction
+    #print(df[['reviews_text']])
+
+    df = clean_text.tokenization()                      #Renzo. convert text to string.
+
+    df = clean_text.lematization()                      #Renzo, converts the word into its root word
+
+    predictor = Predictors(df)                            # Cristina. instance class Predictors()
+    prediction = predictor.naivesb()                      # Cristina. calls model naives bayes
+    print(prediction)
 
 main()
 
