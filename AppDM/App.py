@@ -8,9 +8,8 @@ import datetime
 import io
 import dash_table
 import pandas as pd
-import numpy as np
-import plotly.plotly as py
-import plotly
+
+import CleaningProcess
 
 
 
@@ -79,23 +78,25 @@ page_1_layout = html.Div([
 
 #Renzo:  Function that Validates the content of the csv file
 def parse_contents(contents, filename, date):
-    df2 = pd.DataFrame()
+    # df2 = pd.DataFrame()
     content_type, content_string = contents.split(',')
 
     decoded = base64.b64decode(content_string)
     try:
         if 'csv' in filename:
-            df2 = pd.read_csv(
+            df = pd.read_csv(
                 io.StringIO(decoded.decode('utf-8')))
+
         elif 'xls' in filename:
-            df2 = pd.read_excel(io.BytesIO(decoded))
+            df = pd.read_excel(io.BytesIO(decoded))
 
     except Exception as e:
         print(e)
         return html.Div([
             'There was an error processing this file.'
         ])
-    df = df2
+
+     # df2 = df
     return html.Div([
 
         dash_table.DataTable(
@@ -119,6 +120,7 @@ def parse_contents(contents, filename, date):
 
 def update_output(list_of_contents, list_of_names, list_of_dates):
     if list_of_contents is not None:
+        CleaningProcess.CleaningDF(list_of_contents)
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
@@ -133,6 +135,7 @@ page_2_layout = html.Div([
     html.H2('Preprocessing - pending to assign uploaded csv to global variable', style={'textAlign': 'left', 'color': '#0f2128'}),
 
     dash_table.DataTable(
+
             data=df.to_dict('rows'),
             columns=[{'name': i, 'id': i} for i in df.columns],
             style_table={
@@ -160,6 +163,7 @@ page_2_layout = html.Div([
 
 def update_output(list_of_contents, list_of_names, list_of_dates):
     if list_of_contents is not None:
+        CleaningProcess.CleaningDF(list_of_contents)
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
@@ -203,5 +207,6 @@ def display_page(pathname):
 
 
 if __name__ == '__main__':
+
     app.run_server(debug=True)
 
