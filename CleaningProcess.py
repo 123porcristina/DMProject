@@ -54,7 +54,7 @@ class PreprocessReview:
 
     # cristina. tokenization - separates words
     def tokenization(self):
-        self.pr_df['reviews_text_token'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']), axis=1)
+        self.pr_df['reviews_text'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']), axis=1)
         return self.pr_df
 
 
