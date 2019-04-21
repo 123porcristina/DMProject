@@ -1,14 +1,22 @@
 import pandas as pd
 import nltk
 from nltk import word_tokenize, sent_tokenize
+from nltk.stem import PorterStemmer, LancasterStemmer
 from nltk.corpus import stopwords
 from nltk.probability import FreqDist
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
+from textblob import TextBlob, Word
 import matplotlib.pyplot as plt
 import seaborn as sns
+import re, string, unicodedata
+
+
+
+
+
 
 
 class CleaningDF:
@@ -87,28 +95,45 @@ class PreprocessReview:
     # self.pr_df["avgword_reviews.text"] = self.pr_df["reviews.text"].apply(lambda x: avg_word(x))
     # self.pr_df["avgword_reviews.title"] = self.pr_df["reviews.title"].apply(lambda x: avg_word(x))
 
-    # renzo . Remove stop words and reassign to the same column
+    #renzo . Remove stop words and reassign to the same column
     def remove_stop_w2(self):
         stop_words = stopwords.words('english')
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop_words))
-        #Cristina. Get ride of numbers
-        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('\d+', '')
         return self.pr_df
 
 
-    # renzo. Count the lest frequent words
+    #renzo. Count the lest frequent words
     def count_rare_word(self):
         freq = pd.Series(" ".join(self.pr_df['reviews_text']).split()).value_counts()[-15:]
         # freq = pd.Series(' '.join(train['tweet']).split()).value_counts()[-10:]
         return freq
 
-    # renzo . Remove rare words
+    #renzo . Remove rare words
     def remove_rare_words(self):
         freq = pd.Series(" ".join(self.pr_df['reviews_text']).split()).value_counts()[-15:]
         freq = list(freq.index)
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in freq))
         return self.pr_df
 
+
+    #Renzo. Spelling correction
+    def spelling_correction(self):
+        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: str(TextBlob(x).correct()))
+        return self.pr_df
+
+    #Renzo. converts the word into its root word
+    def lematization(self):
+        porter = PorterStemmer()
+        lancaster = LancasterStemmer()
+        self.pr_df["reviews_text_token2"] = self.pr_df["reviews_text_token2"].apply(lambda x: [lancaster.stem(y) for y in x])
+        # self.pr_df["reviews_text_token2"] = self.pr_df["reviews_text_2"].apply(lambda x: " ".join([Word(word).lemmatize() for word in x.split()]))
+        return self.pr_df
+
+
+    #Renzo. Tokenize function. To use after the text depuration
+    def tokenization(self):
+        self.pr_df['reviews_text_token2'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']),axis=1)
+        return self.pr_df
 
 class Predictors:
     def __init__(self, f_df):
@@ -152,24 +177,28 @@ def main():
 
     clean_text.common_words(df['reviews_text'],25)        # Call before remove stop words to get the frequency before
 
+
+
     # Renzo - Changes start
     df = clean_text.remove_stop_w2()                      # Renzo. It removes stop words from reviews_text
-    print(df[['reviews_text']])
 
     clean_text.common_words(df['reviews_text'],25)        # call after remove stop words to get the new frequency
 
     cwc = clean_text.count_rare_word()                    # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
-    print(cwc)
 
     df = clean_text.remove_rare_words()                   # Renzo. This will clean the rare words from the reviews column
-    print(df[['reviews_text']])
-    #Renzo - Changes end
 
+    #Renzo. Slow process. to validate if we will use it
+    #df = clean_text.spelling_correction()               #Renzo. This will do the spelling correction
+    #print(df[['reviews_text']])
+
+    df = clean_text.tokenization()                      #Renzo. convert text to string.
+
+    df = clean_text.lematization()                      #Renzo, converts the word into its root word
 
     predictor = Predictors(df)                            # Cristina. instance class Predictors()
     prediction = predictor.naivesb()                      # Cristina. calls model naives bayes
     print(prediction)
-
 
 main()
 
