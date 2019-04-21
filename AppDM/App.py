@@ -34,7 +34,7 @@ app.layout = html.Div([
             'textAlign': 'center',
             'margin': '10px'
         },
-        # Allow multiple files to be uploaded
+        # Allow multiple files to be uploaded.
         multiple=True
     ),
     html.Div(id='output-data-upload'),
