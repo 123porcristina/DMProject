@@ -1,6 +1,3 @@
-import nltk
-import re, string, unicodedata
-from nltk import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, SnowballStemmer, LancasterStemmer
 from nltk.probability import FreqDist
@@ -12,6 +9,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
 from textblob import TextBlob, Word
 from sklearn.pipeline import Pipeline
+import nltk
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -77,7 +75,7 @@ class PreprocessReview:
         self.pr_df["reviews_text"] = self.pr_df['reviews_text'].apply(
             lambda x: " ".join(x.lower() for x in x.split()))  # lower case kevin
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('[^\w\s]', "")  # puntuation kevin
-        self.pr_df['reviews_text'] = self.pr_df['reviews_text'].dropna().reset_index(drop=True) # Renzo: delete NaN and reindex
+        self.pr_df['reviews_text'] = self.pr_df['reviews_text'].dropna().reset_index(drop=True) # Cristina: delete NaN and reindex
 
 
         return self.pr_df
@@ -182,14 +180,14 @@ class Predictors:
         nb_classifier = MultinomialNB()
         nb_classifier.fit(count_train, y_train)
         pred = nb_classifier.predict(count_test)
-        print(metrics.accuracy_score(y_test, pred))
         metrics.confusion_matrix(y_test, pred, labels=[1, 2, 3, 4, 5])
         counter = 0
         for review, category in zip(X_test, pred):
-            print('%r => %s' % (review, category))
+            print('%r => %s' % (category, review))
             if (counter == 40):
                 break
             counter += 1
+        print("Accuracy score Naives Bayes: " + str(metrics.accuracy_score(y_test, pred)))
         return metrics.accuracy_score(y_test, pred)
 
     #Kevin. SVM Model
@@ -207,7 +205,6 @@ class Predictors:
     #Renzo
     def linearsvc(self):
         self.f_df['reviews_rating'] = self.f_df['reviews_rating'].round()
-        export_csv = self.f_df.to_csv(r'/Users/renzocastagnino/Downloads/test.csv', index = None, header=True)
         stemmer = SnowballStemmer("english")
         words = stopwords.words("english")
 
@@ -248,21 +245,21 @@ def main():
     df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
 
     # 2. CLEANING PROCESS
-    clean = CleaningDF(df_file)                           # instance class CleaningDF()
-    df = clean.drop_columns()                             # Drop features that are not necessary for the analysis
-    df = clean.missing_val()                              # Verify and clean missing values and converts to string reviews_text
+    clean = CleaningDF(df_file)                           # Cristina. instance class CleaningDF()
+    df = clean.drop_columns()                             # Cristina. Drop features that are not necessary for the analysis
+    df = clean.missing_val()                              # Cristina - Kevin. Verify and clean missing values and converts to string reviews_text
 
 
     # 3. PREPROCESSING
-    clean_text = PreprocessReview(df)                     # instance class PreprocessReview()
-    clean_text.common_words(df['reviews_text'],25)        # Shows the frequency of stop words BEFORE removing
-    df = clean_text.clean_split_text()                    # Converts to lower case, removes punctuation.
+    clean_text = PreprocessReview(df)                     # Cristina. instance class PreprocessReview()
+    clean_text.common_words(df['reviews_text'],25)        # Cristina. Shows the frequency of stop words BEFORE removing
+    df = clean_text.clean_split_text()                    # Cristina - Kevin. Converts to lower case, removes punctuation.
     df = clean_text.remove_stop_w()                       # Renzo. It removes stop words from reviews_text
-    clean_text.common_words(df['reviews_text'],25)        # Shows the frequency of stop words AFTER removing
+    clean_text.common_words(df['reviews_text'],25)        # Cristina. Shows the frequency of stop words AFTER removing
     cwc = clean_text.count_rare_word()                    # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
     df = clean_text.remove_rare_words()                   # Renzo. This will clean the rare words from the reviews column
     #df = clean_text.spelling_correction()                # Renzo. This will do the spelling correction. SLOW PROCESS
-    df = clean_text.tokenization()                        # Renzo. Tokenization: Convert to strings
+    df = clean_text.tokenization()                        # Cristina. Tokenization: Convert to strings
     df = clean_text.lematization()                        # Renzo. Converts the word into its root word
     df = clean_text.stemming()                            # Renzo. This will do the stemming process
     print(df[['reviews_text_lematized']])
@@ -273,7 +270,7 @@ def main():
 
     predictor = Predictors(df)                          # Cristina. instance class Predictors()
     prediction_NB = predictor.naivesb()                 # Cristina. calls model naives bayes
-    print(prediction_NB)
+    # print(prediction_NB)
     prediction_SVM = predictor.svm_apply()              #Kevin. calls model SVM
     print(prediction_SVM)
 
