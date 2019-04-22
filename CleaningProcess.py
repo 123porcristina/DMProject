@@ -147,13 +147,13 @@ class PreprocessReview:
 
     # Kevin
     def rating_negative_Moderate_positive(self):
-        #Kevin. convert rating into low(x >= 0,x < 3),moderate(x >= 3 and x < 5), high(5)
+        #Kevin. scale convert rating into negative(x >= 0,x < 3),moderate(x >= 3 and x <= 4), positive(x<4 and x<5)
         self.pr_df["New_reviews_rating_NMP"] = self.pr_df["reviews_rating"].apply(
             lambda x: 1 if x >= 0 and x < 3 else (2 if x >= 3 and x <=4 else 3))
         return self.pr_df
 
     def rating_Negative_Positive(self):
-        #Kevin. convert rating into low(x >= 0,x < 3),moderate(x >= 3 and x < 5), high(5)
+        #Kevin. scale convert rating into negative(x >= 0,x =< 3), positive (x > 3 and x<=5)
         self.pr_df["New_reviews_rating_NP"] = self.pr_df["reviews_rating"].apply(
             lambda x: 1 if x >= 0 and x <= 3 else 2)
         return self.pr_df
@@ -193,7 +193,17 @@ class Predictors:
         print("Accuracy score Naives Bayes: " + str(metrics.accuracy_score(y_test, pred)))
         return metrics.accuracy_score(y_test, pred)
 
-    #Kevin. SVM Model
+    #Kevin. SVM with rbf, including the compare with scale
+    def svm_apply(self):
+        X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'], self.f_df['reviews_rating'].astype('int'), test_size=0.25, random_state=85)
+        count_vectorizer = CountVectorizer()
+        count_train = count_vectorizer.fit_transform(X_train.values)
+        count_test = count_vectorizer.transform(X_test.values)
+        SVM = SVC(C=1.0, kernel='rbf', degree=3, gamma='auto')
+        SVM.fit(count_train, y_train)
+        predictions_SVM = SVM.predict(count_test)
+        return "Accuracy score SVM without scale: "+str(metrics.accuracy_score(y_test, predictions_SVM))
+
     def svm_apply_1(self):
         X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'], self.f_df["New_reviews_rating_NMP"].astype('int'), test_size=0.25, random_state=85)
         count_vectorizer = CountVectorizer()
@@ -202,7 +212,7 @@ class Predictors:
         SVM = SVC(C=1.0, kernel='rbf', degree=3, gamma='auto')
         SVM.fit(count_train, y_train)
         predictions_SVM = SVM.predict(count_test)
-        return "Accuracy score SVM: "+str(metrics.accuracy_score(y_test, predictions_SVM))
+        return "Accuracy score SVM with NMP Scale: "+str(metrics.accuracy_score(y_test, predictions_SVM))
 
     def svm_apply_2(self):
         X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'], self.f_df["New_reviews_rating_NP"].astype('int'), test_size=0.25, random_state=85)
@@ -212,7 +222,7 @@ class Predictors:
         SVM = SVC(C=1.0, kernel='rbf', degree=3, gamma='auto')
         SVM.fit(count_train, y_train)
         predictions_SVM = SVM.predict(count_test)
-        return "Accuracy score SVM: "+str(metrics.accuracy_score(y_test, predictions_SVM))
+        return "Accuracy score SVM with NP Scale:"+str(metrics.accuracy_score(y_test, predictions_SVM))
 
     #Renzo
     def linearsvc(self):
@@ -267,8 +277,8 @@ def main():
     clean_text.common_words(df['reviews_text'],25)        # Cristina. Shows the frequency of stop words BEFORE removing
     df = clean_text.clean_split_text()                    # Cristina - Kevin. Converts to lower case, removes punctuation.
     df = clean_text.remove_stop_w()                       # Renzo. It removes stop words from reviews_text
-    df = clean_text.rating_negative_Moderate_positive()   # Kevin. Recategorized the rating to negative_Moderate_positive
-    df = clean_text.rating_Negative_Positive()            # Kevin. Recategorized the rating to negative_positive
+    df = clean_text.rating_negative_Moderate_positive()   # Kevin. scaled the rating to negative_Moderate_positive
+    df = clean_text.rating_Negative_Positive()            # Kevin. scaled the rating to negative_positive
     cwc = clean_text.count_rare_word()                    # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
     df = clean_text.remove_rare_words()                   # Renzo. This will clean the rare words from the reviews column
     clean_text.common_words(df['reviews_text'], 25)       # Cristina. Shows the frequency of stop words AFTER removing
@@ -286,9 +296,11 @@ def main():
     predictor = Predictors(df)                          # Cristina. instance class Predictors()
     prediction_NB = predictor.naivesb()                 # Cristina. calls model naives bayes
     print(prediction_NB)
-    prediction_rbf_1 = predictor.svm_apply_1()          #Kevin. calls model SVM, with negative_Moderate_positive rating with 0.4808 accurancy
+    prediction_rbf = predictor.svm_apply()              # Kevin. calls SVM without scale of rating
+    print(prediction_rbf)
+    prediction_rbf_1 = predictor.svm_apply_1()          # Kevin. calls SVM, with negative_Moderate_positive rating with 0.4808 accurancy
     print(prediction_rbf_1)
-    prediction_rbf_2 = predictor.svm_apply_2()          # calls model SVM, with negative_positive rating with 0.7224 accurancy
+    prediction_rbf_2 = predictor.svm_apply_2()          # Kevin. calls SVM, with negative_positive rating with 0.7224 accurancy
     print(prediction_rbf_2)
 
 
