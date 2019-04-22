@@ -1,19 +1,21 @@
-import pandas as pd
 import nltk
+import re, string, unicodedata
 from nltk import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer, SnowballStemmer, LancasterStemmer
 from nltk.probability import FreqDist
+from sklearn.svm import SVC, LinearSVC
 from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
+from textblob import TextBlob, Word
+from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
 import seaborn as sns
-import re, string, unicodedata
-from sklearn.svm import SVC
-from nltk.stem import PorterStemmer, LancasterStemmer
-from textblob import TextBlob, Word
-
+import pandas as pd
+import numpy as np
 
 
 class CleaningDF:
@@ -50,7 +52,7 @@ class PreprocessReview:
         self.pr_df = pr_df
 
 
-    # cristina. Remove Most frequent words.
+    # cristina. Remove Most frequent words
     def common_words(self, wfilter, n_words):
 
         self.filter = wfilter
@@ -75,6 +77,8 @@ class PreprocessReview:
         self.pr_df["reviews_text"] = self.pr_df['reviews_text'].apply(
             lambda x: " ".join(x.lower() for x in x.split()))  # lower case kevin
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('[^\w\s]', "")  # puntuation kevin
+        self.pr_df['reviews_text'] = self.pr_df['reviews_text'].dropna().reset_index(drop=True) # Renzo: delete NaN and reindex
+
 
         return self.pr_df
 
@@ -85,6 +89,8 @@ class PreprocessReview:
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop_words))
         #Cristina. Get ride of numbers
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('\d+', '')
+        self.pr_df['reviews_text'] = self.pr_df['reviews_text'].dropna().reset_index(drop=True) # Renzo: delete NaN and reindex
+
         return self.pr_df
 
 
@@ -99,21 +105,30 @@ class PreprocessReview:
         freq = pd.Series(" ".join(self.pr_df['reviews_text']).split()).value_counts()[-15:]
         freq = list(freq.index)
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in freq))
+        self.pr_df['reviews_text'] = self.pr_df['reviews_text'].dropna().reset_index(drop=True) # Renzo: delete NaN and reindex
+
         return self.pr_df
 
 
     # cristina. tokenization - separates words
     def tokenization(self):
-        self.pr_df['reviews_text'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']), axis=1)
+        self.pr_df['reviews_text_token'] = self.pr_df.apply(lambda row: nltk.word_tokenize(row['reviews_text']), axis=1)
         return self.pr_df
 
 
     #Renzo. converts the word into its root word
     def lematization(self):
-        porter = PorterStemmer()
-        lancaster = LancasterStemmer()
-        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: [lancaster.stem(y) for y in x])
+        self.pr_df["reviews_text_lematized"] = self.pr_df["reviews_text"]
+        self.pr_df["reviews_text_lematized"] = self.pr_df["reviews_text_lematized"].apply(lambda x: " ".join([Word(word).lemmatize() for word in x.split()]))
         return self.pr_df
+
+
+    def stemming(self):
+        st = PorterStemmer()
+        self.pr_df["reviews_text_lematized"] = self.pr_df["reviews_text_lematized"].apply(lambda x: " ".join([st.stem(word) for word in x.split()]))
+        return self.pr_df
+
+
 
 
     #Renzo. Spelling correction
@@ -189,7 +204,43 @@ class Predictors:
         return metrics.accuracy_score(predictions_SVM, y_test)
 
 
+    #Renzo
+    def linearsvc(self):
+        self.f_df['reviews_rating'] = self.f_df['reviews_rating'].round()
+        export_csv = self.f_df.to_csv(r'/Users/renzocastagnino/Downloads/test.csv', index = None, header=True)
+        stemmer = SnowballStemmer("english")
+        words = stopwords.words("english")
 
+        X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'], self.f_df['reviews_rating'].astype('int'), test_size = 0.25, random_state=53)
+
+        pipeline = Pipeline([
+            ('vect', TfidfVectorizer(ngram_range=(1,3), stop_words=None, sublinear_tf=True)),
+            ('chi', SelectKBest(chi2, k=8000)),
+            ('clf', LinearSVC(C=1.0, penalty='l1',max_iter=3000, dual=False))
+                            ])
+
+        model = pipeline.fit(X_train, y_train)
+
+        vectorizer = model.named_steps['vect']
+        chi = model.named_steps['chi']
+        clf = model.named_steps['clf']
+
+        feature_names = vectorizer.get_feature_names()
+        feature_names = [feature_names[i] for i in chi.get_support(indices=True)]
+        feature_names = np.asarray(feature_names)
+
+        target_names = ['1', '2', '3', '4', '5']
+        print("The top keywords are: ")
+
+        for i, label in enumerate(target_names):
+            top10 = np.argsort(clf.coef_[i])[-10:]
+            print("%s: %s" %(label, " ".join(feature_names[top10])))
+
+        print("Accuracy score: " + str(model.score(X_test, y_test)))
+        print(model.predict(['that was an awesome place. great food!']))
+
+        return print("passed")
+        # return model.score(X_test,y_test)
 
 def main():
 
@@ -210,18 +261,21 @@ def main():
     clean_text.common_words(df['reviews_text'],25)        # Shows the frequency of stop words AFTER removing
     cwc = clean_text.count_rare_word()                    # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
     df = clean_text.remove_rare_words()                   # Renzo. This will clean the rare words from the reviews column
-    #df = clean_text.spelling_correction()               #Renzo. This will do the spelling correction. SLOW PROCESS
+    #df = clean_text.spelling_correction()                # Renzo. This will do the spelling correction. SLOW PROCESS
     df = clean_text.tokenization()                        # Renzo. Tokenization: Convert to strings
     df = clean_text.lematization()                        # Renzo. Converts the word into its root word
-    print(df[['reviews_text']])
+    df = clean_text.stemming()                            # Renzo. This will do the stemming process
+    print(df[['reviews_text_lematized']])
+    print(df[['reviews_text_token']])
 
+    lsvc = Predictors(df)
+    lsvc.linearsvc()
 
-    # predictor = Predictors(df)                          # Cristina. instance class Predictors()
-    # prediction_NB = predictor.naivesb()                 # Cristina. calls model naives bayes
-    # print(prediction_NB)
-    # prediction_SVM = predictor.svm_apply()              #Kevin. calls model SVM
-    # print(prediction_SVM)
-
+    predictor = Predictors(df)                          # Cristina. instance class Predictors()
+    prediction_NB = predictor.naivesb()                 # Cristina. calls model naives bayes
+    print(prediction_NB)
+    prediction_SVM = predictor.svm_apply()              #Kevin. calls model SVM
+    print(prediction_SVM)
 
 
 main()
