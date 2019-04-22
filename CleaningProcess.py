@@ -42,7 +42,7 @@ class CleaningDF:
         self.p_df["reviews_title"].notnull().isna().sum()  # Kevin
         self.p_df['reviews_text'] = self.p_df['reviews_text'].dropna().reset_index(
             drop=True)  # delete NaN and reindex   #cristina
-        self.p_df['reviews_text'] = self.p_df['reviews_text'].astype(str)  # Cristina. To assure all are strings
+        self.p_df['reviews_text'] = self.p_df['reviews_text'].astype(str)  # Cristina. To assure all are strings.
         return self.p_df
 
 
