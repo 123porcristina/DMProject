@@ -229,8 +229,6 @@ class Predictors:
     #Renzo
     def linearsvc(self):
         self.f_df['reviews_rating'] = self.f_df['reviews_rating'].round()
-        stemmer = SnowballStemmer("english")
-        words = stopwords.words("english")
 
         X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'], self.f_df['reviews_rating'].astype('int'), test_size = 0.25, random_state=53)
 
@@ -258,10 +256,9 @@ class Predictors:
             print("%s: %s" %(label, " ".join(feature_names[top10])))
 
         print("Accuracy score: " + str(model.score(X_test, y_test)))
-        print(model.predict(['that was an awesome place. great food!']))
+        print("the score of manual input is:", model.predict(["I love this place, is amazing"]))
 
-        return print("passed")
-        # return model.score(X_test,y_test)
+        return model.score(X_test, y_test)
 
 def main():
 
