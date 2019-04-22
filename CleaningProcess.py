@@ -50,7 +50,7 @@ class PreprocessReview:
         self.pr_df = pr_df
 
 
-    # cristina. Remove Most frequent words
+    # cristina. Remove Most frequent words.
     def common_words(self, wfilter, n_words):
 
         self.filter = wfilter
@@ -187,6 +187,9 @@ class Predictors:
         SVM.fit(count_train, y_train)
         predictions_SVM = SVM.predict(count_test)
         return metrics.accuracy_score(predictions_SVM, y_test)
+
+
+
 
 def main():
 
