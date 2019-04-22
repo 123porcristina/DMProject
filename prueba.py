@@ -9,6 +9,9 @@ import dash_table
 import pandas as pd
 import CleaningProcess as dmproject
 
+import dash_core_components as dcc
+import plotly.graph_objs as go
+
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -58,7 +61,24 @@ app.layout = html.Div([
         html.Div([
             html.Div([
                 dcc.Graph(
+                    # figure=go.Figure(
+                    #     data = [
+                    #         go.Bar(
+                    #             x=[1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
+                    #                2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012],
+                    #             y=[219, 146, 112, 127, 124, 180, 236, 207, 236, 263,
+                    #                350, 430, 474, 526, 488, 537, 500, 439],
+                    #             name='Rest of world',
+                    #             marker=go.bar.Marker(color='rgb(55, 83, 109)'
+                    #             )
+                    #         ),
+                    #     ]
+                    # ),
+                    style={'height': 300},
                     id='example-graph'
+
+
+
                 )
             ], className="six columns"),  # six columns for 1st graphic
             html.Div([
@@ -145,37 +165,46 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
              [Input('upload-data', 'children')])
 def get_before_frequency(DataTable):
 
-    data = []
+    clean = dmproject.CleaningDF(df_file)                     # Cristina. instance class CleaningDF()
+    n_df = clean.drop_columns()                               # Cristina. Drop features that are not necessary for the analysis
+    n_df = clean.missing_val()                                # Cristina. Verify and clean missing values and converts to string reviews_text
+    clean_text = dmproject.PreprocessReview(n_df)
+    freq = clean_text.common_words(n_df['reviews_text'], 25)
 
-    dmproject.CleaningDF(df_file)
-    dmproject.CleaningDF.missing_val()
-    clean_text = dmproject.PreprocessReview(df_file)
-    freq = clean_text.common_words(df_file['reviews_text'], 25)
+    # 3. PREPROCESSING
+    clean_text = dmproject.PreprocessReview(df_file)         # Cristina. instance class PreprocessReview()
+    df = clean_text.clean_split_text()                       # Cristina - Kevin. Converts to lower case, removes punctuation.
+    df = clean_text.remove_stop_w()                          # Renzo. It removes stop words from reviews_text
+    df = clean_text.count_rare_word()                        # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
+    df = clean_text.remove_rare_words()                      # Renzo. This will clean the rare words from the reviews column
+    freqA = clean_text.common_words(df['reviews_text'], 25)  # Cristina. Shows the frequency of stop words AFTER removing
 
-    for i in freq:
-        data.append({'x': freq[i]['x'], 'y': freq[i]['y'],
-                     'type': 'bar', 'name': i})
+    #convert colums to list
+    words = freq['word'].tolist()
+    twords= freq['count'].tolist()
+    wordsA = freqA['word'].tolist()
+    twordsA = freq['count'].tolist()
 
-    figure = {#for this value return figure
-        'data': data,
-        'layout': {
-            'title': 'Graph NO preprocessing',
-            'xaxis' : dict(
-                title='x Axis',
-                titlefont=dict(
-                family='Courier New, monospace',
-                size=20,
-                color='#7f7f7f'
-            )),
-            'yaxis' : dict(
-                title='y Axis',
-                titlefont=dict(
-                family='Helvetica, monospace',
-                size=20,
-                color='#7f7f7f'
-            ))
-        }
-    }
+    figure=go.Figure(
+        data = [
+            go.Bar(
+                x=words,
+                y=twords,
+                name='Before Preprocessing',
+                marker=go.bar.Marker(color='rgb(55, 83, 109)'
+                )
+            ),
+
+            go.Bar(
+                x=wordsA,
+                y=twordsA,
+                name='After Preprocessing',
+                marker=go.bar.Marker(
+                    color='rgb(26, 118, 255)'
+                )
+            )
+        ]
+    )
     return figure
 
 
