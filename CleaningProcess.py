@@ -67,7 +67,8 @@ class PreprocessReview:
         plt.figure(figsize=(20, 5))
         ax = sns.barplot(data=d, x="word", y="count")
         ax.set(ylabel='Count')
-        plt.show()
+        # plt.show()
+        return d
 
 
     #1. convert to lower case, remove punctuation
@@ -239,40 +240,40 @@ class Predictors:
         return print("passed")
         # return model.score(X_test,y_test)
 
-def main():
-
-    # 1. UPLOAD THE FILE
-    df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
-
-    # 2. CLEANING PROCESS
-    clean = CleaningDF(df_file)                           # Cristina. instance class CleaningDF()
-    df = clean.drop_columns()                             # Cristina. Drop features that are not necessary for the analysis
-    df = clean.missing_val()                              # Cristina - Kevin. Verify and clean missing values and converts to string reviews_text
-
-
-    # 3. PREPROCESSING
-    clean_text = PreprocessReview(df)                     # Cristina. instance class PreprocessReview()
-    clean_text.common_words(df['reviews_text'],25)        # Cristina. Shows the frequency of stop words BEFORE removing
-    df = clean_text.clean_split_text()                    # Cristina - Kevin. Converts to lower case, removes punctuation.
-    df = clean_text.remove_stop_w()                       # Renzo. It removes stop words from reviews_text
-    clean_text.common_words(df['reviews_text'],25)        # Cristina. Shows the frequency of stop words AFTER removing
-    cwc = clean_text.count_rare_word()                    # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
-    df = clean_text.remove_rare_words()                   # Renzo. This will clean the rare words from the reviews column
-    #df = clean_text.spelling_correction()                # Renzo. This will do the spelling correction. SLOW PROCESS
-    df = clean_text.tokenization()                        # Cristina. Tokenization: Convert to strings
-    df = clean_text.lematization()                        # Renzo. Converts the word into its root word
-    df = clean_text.stemming()                            # Renzo. This will do the stemming process
-    print(df[['reviews_text_lematized']])
-    print(df[['reviews_text_token']])
-
-    lsvc = Predictors(df)
-    lsvc.linearsvc()
-
-    predictor = Predictors(df)                          # Cristina. instance class Predictors()
-    prediction_NB = predictor.naivesb()                 # Cristina. calls model naives bayes
-    # print(prediction_NB)
-    prediction_SVM = predictor.svm_apply()              #Kevin. calls model SVM
-    print(prediction_SVM)
-
-
-main()
+# def main():
+#
+#     # 1. UPLOAD THE FILE
+#     df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
+#
+#     # 2. CLEANING PROCESS
+#     clean = CleaningDF(df_file)                           # Cristina. instance class CleaningDF()
+#     df = clean.drop_columns()                             # Cristina. Drop features that are not necessary for the analysis
+#     df = clean.missing_val()                              # Cristina - Kevin. Verify and clean missing values and converts to string reviews_text
+#
+#
+#     # 3. PREPROCESSING
+#     clean_text = PreprocessReview(df)                     # Cristina. instance class PreprocessReview()
+#     clean_text.common_words(df['reviews_text'],25)        # Cristina. Shows the frequency of stop words BEFORE removing
+#     df = clean_text.clean_split_text()                    # Cristina - Kevin. Converts to lower case, removes punctuation.
+#     df = clean_text.remove_stop_w()                       # Renzo. It removes stop words from reviews_text
+#     cwc = clean_text.count_rare_word()                    # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
+#     df = clean_text.remove_rare_words()                   # Renzo. This will clean the rare words from the reviews column
+#     clean_text.common_words(df['reviews_text'], 25)  # Cristina. Shows the frequency of stop words AFTER removing
+#     #df = clean_text.spelling_correction()                # Renzo. This will do the spelling correction. SLOW PROCESS
+#     df = clean_text.tokenization()                        # Cristina. Tokenization: Convert to strings
+#     df = clean_text.lematization()                        # Renzo. Converts the word into its root word
+#     df = clean_text.stemming()                            # Renzo. This will do the stemming process
+#     print(df[['reviews_text_lematized']])
+#     print(df[['reviews_text_token']])
+#
+#     lsvc = Predictors(df)
+#     lsvc.linearsvc()
+#
+#     predictor = Predictors(df)                          # Cristina. instance class Predictors()
+#     prediction_NB = predictor.naivesb()                 # Cristina. calls model naives bayes
+#     # print(prediction_NB)
+#     prediction_SVM = predictor.svm_apply()              #Kevin. calls model SVM
+#     print(prediction_SVM)
+#
+#
+# main()
