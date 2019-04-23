@@ -66,9 +66,9 @@ class PreprocessReview:
 
         # selecting top #terms most frequent words and plot
         d = words_df.nlargest(columns="count", n=self.n_words)
-        plt.figure(figsize=(20, 5))
-        ax = sns.barplot(data=d, x="word", y="count")
-        ax.set(ylabel='Count')
+        # plt.figure(figsize=(20, 5))
+        # ax = sns.barplot(data=d, x="word", y="count")
+        # ax.set(ylabel='Count')
         # plt.show()
         return d
 
@@ -78,7 +78,7 @@ class PreprocessReview:
 
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('[^\w\s]', "")  # puntuation kevin
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].replace(regex=True, inplace=True, to_replace=r'[^0-9.\-]', value=r'')
-        self.pr_df["reviews_text"] = self.pr_df['reviews_text'].apply(lambda x: " ".join(x.lower() for x in x.split()))  # lower case kevin
+        self.pr_df["reviews_text"] = self.pr_df['reviews_text'].apply(lambda x: " ".join(x.lower() for x in str(x).split()))  # lower case kevin
         self.pr_df['reviews_text'] = self.pr_df['reviews_text'].dropna().reset_index(drop=True) # Cristina: delete NaN and reindex
 
         return self.pr_df

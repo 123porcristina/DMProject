@@ -61,10 +61,8 @@ app.layout = html.Div([
         html.Div([
             html.Div([
                 dcc.Graph(
-
                     # style={'height': 300},
                     id='example-graph'
-
                 )
             ], className="six columns"),  # six columns for 1st graphic
             html.Div([
@@ -104,13 +102,14 @@ def parse_contents(contents, filename, date):
         ])
 
     return html.Div([
-        html.H5(filename),
-        html.H6(datetime.datetime.fromtimestamp(date)),
+        #html.H5(filename),
+        #html.H6(datetime.datetime.fromtimestamp(date)),
 
 
         dash_table.DataTable(
             data=df.to_dict('rows'),
             columns=[{'name': i, 'id': i} for i in df.columns],
+            style_table={'overflowX': 'scroll', 'maxHeight': '400px','overflowY': 'scroll'},
             style_cell={'padding': '5px',
                         'whiteSpace': 'no-wrap',
                         'overflow': 'hidden',
@@ -123,15 +122,15 @@ def parse_contents(contents, filename, date):
                                        'color': 'black'}
         ),
 
-        html.Hr(),  # horizontal line
+        # html.Hr(),  # horizontal line
 
         # For debugging, display the raw contents provided by the web browser
-        html.Div('Raw Content'),
-        html.Pre(contents[0:200] + '...', style={
-            'whiteSpace': 'pre-wrap',
-            'wordBreak': 'break-all'
-        })
-    ], className="six columns", style = {'margin-top': '35',
+        # html.Div('Raw Content'),
+        # html.Pre(contents[0:200] + '...', style={
+        #     'whiteSpace': 'pre-wrap',
+        #     'wordBreak': 'break-all'
+        # })
+    ], className="nine columns", style = {'margin-top': '35',
                                            'margin-left': '15',
                                            'border': '1px solid #C6CCD5'})
 
@@ -159,7 +158,7 @@ def get_before_frequency(DataTable):
 
     # 3. PREPROCESSING
     clean_text = dmproject.PreprocessReview(df_file)         # Cristina. instance class PreprocessReview()
-    df = clean_text.clean_split_text()                       # Cristina - Kevin. Converts to lower case, removes punctuation.
+    # df = clean_text.clean_split_text()                       # Cristina - Kevin. Converts to lower case, removes punctuation.
     df = clean_text.remove_stop_w()                          # Renzo. It removes stop words from reviews_text
     df = clean_text.count_rare_word()                        # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
     df = clean_text.remove_rare_words()                      # Renzo. This will clean the rare words from the reviews column
