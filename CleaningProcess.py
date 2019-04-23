@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
+import re
 
 
 class CleaningDF:
@@ -35,9 +36,10 @@ class CleaningDF:
 
 
     def missing_val(self):
-        self.p_df.isnull().values.any()  # cristina
-        self.p_df["reviews_text"].isna().sum()  # Kevin
-        self.p_df["reviews_title"].notnull().isna().sum()  # Kevin
+        self.p_df.isnull().values.any()                                              # cristina
+        self.p_df["reviews_text"].isna().sum()                                       # Kevin
+        self.p_df["reviews_title"].notnull().isna().sum()                            # Kevin
+        self.p_df['reviews_text'] = self.p_df['reviews_text'].str.replace('\d+', '') #cristina. delete numbers
         self.p_df['reviews_text'] = self.p_df['reviews_text'].dropna().reset_index(
             drop=True)  # delete NaN and reindex   #cristina
         self.p_df['reviews_text'] = self.p_df['reviews_text'].astype(str)  # Cristina. To assure all are strings.
@@ -73,9 +75,10 @@ class PreprocessReview:
 
     #1. Kevin. convert to lower case, remove punctuation
     def clean_split_text(self):
-        self.pr_df["reviews_text"] = self.pr_df['reviews_text'].apply(
-            lambda x: " ".join(x.lower() for x in x.split()))  # lower case kevin
+
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('[^\w\s]', "")  # puntuation kevin
+        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].replace(regex=True, inplace=True, to_replace=r'[^0-9.\-]', value=r'')
+        self.pr_df["reviews_text"] = self.pr_df['reviews_text'].apply(lambda x: " ".join(x.lower() for x in x.split()))  # lower case kevin
         self.pr_df['reviews_text'] = self.pr_df['reviews_text'].dropna().reset_index(drop=True) # Cristina: delete NaN and reindex
 
         return self.pr_df
@@ -84,7 +87,7 @@ class PreprocessReview:
     # renzo. Remove stop words and reassign to the same column
     def remove_stop_w(self):
         stop_words = stopwords.words('english')
-        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in x.split() if x not in stop_words))
+        self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in str(x).split() if x not in stop_words))
         #Cristina. Get ride of numbers
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('\d+', '')
         self.pr_df['reviews_text'] = self.pr_df['reviews_text'].dropna().reset_index(drop=True) # Renzo: delete NaN and reindex
@@ -261,49 +264,49 @@ class Predictors:
         return print("passed")
         # return model.score(X_test,y_test)
 
-def main():
-
-    # 1. UPLOAD THE FILE
-    df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
-
-    # 2. CLEANING PROCESS
-    clean = CleaningDF(df_file)                           # Cristina. instance class CleaningDF()
-    df = clean.drop_columns()                             # Cristina. Drop features that are not necessary for the analysis
-    df = clean.missing_val()                              # Cristina - Kevin. Verify and clean missing values and converts to string reviews_text
-
-
-    # 3. PREPROCESSING
-    clean_text = PreprocessReview(df)                     # Cristina. instance class PreprocessReview()
-    clean_text.common_words(df['reviews_text'],25)        # Cristina. Shows the frequency of stop words BEFORE removing
-    df = clean_text.clean_split_text()                    # Cristina - Kevin. Converts to lower case, removes punctuation.
-    df = clean_text.remove_stop_w()                       # Renzo. It removes stop words from reviews_text
-    cwc = clean_text.count_rare_word()                    # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
-    df = clean_text.remove_rare_words()                   # Renzo. This will clean the rare words from the reviews column
-    clean_text.common_words(df['reviews_text'], 25)       # Cristina. Shows the frequency of stop words AFTER removing
-    #df = clean_text.spelling_correction()                # Renzo. This will do the spelling correction. SLOW PROCESS
-    df = clean_text.tokenization()                        # Cristina. Tokenization: Convert to strings
-    df = clean_text.lematization()                        # Renzo. Converts the word into its root word
-    df = clean_text.stemming()                            # Renzo. This will do the stemming process
-    print(df[['reviews_text_lematized']])
-    print(df[['reviews_text_token']])
-
-
-    lsvc = Predictors(df)
-    lsvc.linearsvc()
-
-    predictor = Predictors(df)                          # Cristina. instance class Predictors()
-    prediction_NB = predictor.naivesb()                 # Cristina. calls model naives bayes
-    print(prediction_NB)
-    prediction_rbf = predictor.svm_apply()              # Kevin. calls SVM without scale of rating
-    print(prediction_rbf)
-
-    # look for the improvement by doing the re-scale
-    df = clean_text.rating_negative_Moderate_positive()  # Kevin. scaled the rating to negative_Moderate_positive
-    df = clean_text.rating_Negative_Positive()          # Kevin. scaled the rating to negative_positive
-    prediction_rbf_1 = predictor.svm_apply_1()          # Kevin. calls SVM, with negative_Moderate_positive rating with 0.4808 accurancy
-    print(prediction_rbf_1)
-    prediction_rbf_2 = predictor.svm_apply_2()          # Kevin. calls SVM, with negative_positive rating with 0.7224 accurancy
-    print(prediction_rbf_2)
-
-
-main()
+# def main():
+#
+#     # 1. UPLOAD THE FILE
+#     df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
+#
+#     # 2. CLEANING PROCESS
+#     clean = CleaningDF(df_file)                           # Cristina. instance class CleaningDF()
+#     df = clean.drop_columns()                             # Cristina. Drop features that are not necessary for the analysis
+#     df = clean.missing_val()                              # Cristina - Kevin. Verify and clean missing values and converts to string reviews_text
+#
+#
+#     # 3. PREPROCESSING
+#     clean_text = PreprocessReview(df)                     # Cristina. instance class PreprocessReview()
+#     clean_text.common_words(df['reviews_text'],25)        # Cristina. Shows the frequency of stop words BEFORE removing
+#     df = clean_text.clean_split_text()                    # Cristina - Kevin. Converts to lower case, removes punctuation.
+#     df = clean_text.remove_stop_w()                       # Renzo. It removes stop words from reviews_text
+#     cwc = clean_text.count_rare_word()                    # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
+#     df = clean_text.remove_rare_words()                   # Renzo. This will clean the rare words from the reviews column
+#     clean_text.common_words(df['reviews_text'], 25)       # Cristina. Shows the frequency of stop words AFTER removing
+#     #df = clean_text.spelling_correction()                # Renzo. This will do the spelling correction. SLOW PROCESS
+#     df = clean_text.tokenization()                        # Cristina. Tokenization: Convert to strings
+#     df = clean_text.lematization()                        # Renzo. Converts the word into its root word
+#     df = clean_text.stemming()                            # Renzo. This will do the stemming process
+#     print(df[['reviews_text_lematized']])
+#     print(df[['reviews_text_token']])
+#
+#
+#     lsvc = Predictors(df)
+#     lsvc.linearsvc()
+#
+#     predictor = Predictors(df)                          # Cristina. instance class Predictors()
+#     prediction_NB = predictor.naivesb()                 # Cristina. calls model naives bayes
+#     print(prediction_NB)
+#     prediction_rbf = predictor.svm_apply()              # Kevin. calls SVM without scale of rating
+#     print(prediction_rbf)
+#
+#     # look for the improvement by doing the re-scale
+#     df = clean_text.rating_negative_Moderate_positive()  # Kevin. scaled the rating to negative_Moderate_positive
+#     df = clean_text.rating_Negative_Positive()          # Kevin. scaled the rating to negative_positive
+#     prediction_rbf_1 = predictor.svm_apply_1()          # Kevin. calls SVM, with negative_Moderate_positive rating with 0.4808 accurancy
+#     print(prediction_rbf_1)
+#     prediction_rbf_2 = predictor.svm_apply_2()          # Kevin. calls SVM, with negative_positive rating with 0.7224 accurancy
+#     print(prediction_rbf_2)
+#
+#
+# main()
