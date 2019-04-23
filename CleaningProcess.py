@@ -174,6 +174,7 @@ class Predictors:
 
     #Cristina. Model and evaluation
     def naivesb(self):
+
         X_train, X_test, y_train, y_test = train_test_split(self.f_df['reviews_text'],
                                                             self.f_df['reviews_rating'].astype('int'),
                                                             test_size=0.25, random_state=85)
@@ -185,11 +186,12 @@ class Predictors:
         nb_classifier = MultinomialNB()
         nb_classifier.fit(count_train, y_train)
         pred = nb_classifier.predict(count_test)
-        metrics.confusion_matrix(y_test, pred, labels=[1, 2, 3, 4, 5])
+        print(metrics.confusion_matrix(y_test, pred, labels=[1, 2, 3, 4, 5]))
+
         counter = 0
         for review, category in zip(X_test, pred):
             print('%r => %s' % (category, review))
-            if (counter == 40):
+            if (counter == 5):
                 break
             counter += 1
         print("Accuracy score Naives Bayes: " + str(metrics.accuracy_score(y_test, pred)))
@@ -264,6 +266,7 @@ def main():
 
     # 1. UPLOAD THE FILE
     df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
+    a = df_file.info()
 
 
     # 2. CLEANING PROCESS
