@@ -9,9 +9,12 @@ import io
 import dash_table
 import pandas as pd
 
-import CleaningProcess
+# import CleaningProcess
 
-
+markdown_text = '''
+### Dash and Markdown
+A lot of text
+'''
 
 
 print(dcc.__version__) # 0.6.0 or above is required
@@ -120,7 +123,7 @@ def parse_contents(contents, filename, date):
 
 def update_output(list_of_contents, list_of_names, list_of_dates):
     if list_of_contents is not None:
-        CleaningProcess.CleaningDF(list_of_contents)
+        # CleaningProcess.CleaningDF(list_of_contents)
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
@@ -163,7 +166,7 @@ page_2_layout = html.Div([
 
 def update_output(list_of_contents, list_of_names, list_of_dates):
     if list_of_contents is not None:
-        CleaningProcess.CleaningDF(list_of_contents)
+        # CleaningProcess.CleaningDF(list_of_contents)
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]

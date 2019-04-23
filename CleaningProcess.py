@@ -268,6 +268,7 @@ def main():
     # 1. UPLOAD THE FILE
     df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
 
+
     # 2. CLEANING PROCESS
     clean = CleaningDF(df_file)                           # Cristina. instance class CleaningDF()
     df = clean.drop_columns()                             # Cristina. Drop features that are not necessary for the analysis
