@@ -18,6 +18,23 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 df_file = pd.read_csv('datafiniti_hotel_reviews.csv')
 
+# 2. CLEANING PROCESS
+clean = dmproject.CleaningDF(df_file)
+df = clean.drop_columns()                             # Cristina. Drop features that are not necessary for the analysis
+df = clean.missing_val()                              # Cristina - Kevin. Verify and clean missing values and converts to string reviews_text
+
+
+# 3. PREPROCESSING
+clean_text = dmproject.PreprocessReview(df_file)
+freq=clean_text.common_words(df['reviews_text'],25)        # Cristina. Shows the frequency of stop words BEFORE removing
+df = clean_text.clean_split_text()                    # Cristina - Kevin. Converts to lower case, removes punctuation.
+df = clean_text.remove_stop_w()                       # Renzo. It removes stop words from reviews_text
+cwc = clean_text.count_rare_word()                    # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
+df = clean_text.remove_rare_words()                   # Renzo. This will clean the rare words from the reviews column
+freqA=clean_text.common_words(df['reviews_text'], 25)       # Cristina. Shows the frequency of stop words AFTER removing
+
+
+
 app.layout = html.Div([
     html.Div([
 
@@ -90,8 +107,8 @@ def parse_contents(contents, filename, date):
     try:
         if 'csv' in filename:
             # Assume that the user uploaded a CSV file
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8')))
+            df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
             df = pd.read_excel(io.BytesIO(decoded))
@@ -104,7 +121,6 @@ def parse_contents(contents, filename, date):
     return html.Div([
         #html.H5(filename),
         #html.H6(datetime.datetime.fromtimestamp(date)),
-
 
         dash_table.DataTable(
             data=df.to_dict('rows'),
@@ -122,14 +138,6 @@ def parse_contents(contents, filename, date):
                                        'color': 'black'}
         ),
 
-        # html.Hr(),  # horizontal line
-
-        # For debugging, display the raw contents provided by the web browser
-        # html.Div('Raw Content'),
-        # html.Pre(contents[0:200] + '...', style={
-        #     'whiteSpace': 'pre-wrap',
-        #     'wordBreak': 'break-all'
-        # })
     ], className="nine columns", style = {'margin-top': '35',
                                            'margin-left': '15',
                                            'border': '1px solid #C6CCD5'})
@@ -150,25 +158,9 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
              [Input('upload-data', 'children')])
 def get_before_frequency(DataTable):
 
-    clean = dmproject.CleaningDF(df_file)                     # Cristina. instance class CleaningDF()
-    n_df = clean.drop_columns()                               # Cristina. Drop features that are not necessary for the analysis
-    n_df = clean.missing_val()                                # Cristina. Verify and clean missing values and converts to string reviews_text
-    clean_text = dmproject.PreprocessReview(n_df)
-    freq = clean_text.common_words(n_df['reviews_text'], 25)
-
-    # 3. PREPROCESSING
-    clean_text = dmproject.PreprocessReview(df_file)         # Cristina. instance class PreprocessReview()
-    # df = clean_text.clean_split_text()                       # Cristina - Kevin. Converts to lower case, removes punctuation.
-    df = clean_text.remove_stop_w()                          # Renzo. It removes stop words from reviews_text
-    df = clean_text.count_rare_word()                        # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
-    df = clean_text.remove_rare_words()                      # Renzo. This will clean the rare words from the reviews column
-    freqA = clean_text.common_words(df['reviews_text'], 25)  # Cristina. Shows the frequency of stop words AFTER removing
-
     #convert colums to list
     words = freq['word'].tolist()
     twords= freq['count'].tolist()
-    wordsA = freqA['word'].tolist()
-    twordsA = freq['count'].tolist()
 
     figure=go.Figure(
         data = [
@@ -179,61 +171,51 @@ def get_before_frequency(DataTable):
                 marker=go.bar.Marker(color='rgb(55, 83, 109)'
                 )
             ),
-
-            go.Bar(
-                x=wordsA,
-                y=twordsA,
-                name='After Preprocessing',
-                marker=go.bar.Marker(
-                    color='rgb(26, 118, 255)'
-                )
-            )
-        ]
+        ],
+        layout = go.Layout(
+            title='Before Cleaning',
+            showlegend=True,
+            legend=go.layout.Legend(
+                x=0,
+                y=1.0
+            ),
+            margin=go.layout.Margin(l=40, r=0, t=40, b=30)
+        )
     )
     return figure
 
 
-# @app.callback(Output('example-graph2', 'figure')
-#               [Input('upload-data', 'contents')])
-# def get_after_frequency(list_of_contents):
-#     data = [{}]
-#     dmproject.CleaningDF(list_of_contents)  # Cristina. instance class CleaningDF()
-#     df = dmproject.CleaningDF.drop_columns()  # Cristina. Drop features that are not necessary for the analysis
-#     df = dmproject.CleaningDF.missing_val()  # Cristina - Kevin. Verify and clean missing values and converts to string reviews_text
-#
-#     # 3. PREPROCESSING
-#     clean_text = dmproject.PreprocessReview(df)  # Cristina. instance class PreprocessReview()
-#     df = clean_text.clean_split_text()  # Cristina - Kevin. Converts to lower case, removes punctuation.
-#     df = clean_text.remove_stop_w()  # Renzo. It removes stop words from reviews_text
-#     df = clean_text.count_rare_word()  # Renzo. Count the rare words in the reviews. I tried with :10, then with :-20
-#     df = clean_text.remove_rare_words()  # Renzo. This will clean the rare words from the reviews column
-#     freq = clean_text.common_words(df['reviews_text'], 25)  # Cristina. Shows the frequency of stop words AFTER removing
-#
-#     for i in freq:
-#         data.append({'x': freq[i]['x'], 'y': freq[i]['y'],
-#                      'type': 'line', 'name': i})
-#
-#     figure = {  # for this value return figure
-#         'data': data,
-#         'layout': {
-#             'title': 'Graph with Preprocessing',
-#             'xaxis': dict(
-#                 title='x Axis',
-#                 titlefont=dict(
-#                     family='Courier New, monospace',
-#                     size=20,
-#                     color='#7f7f7f'
-#                 )),
-#             'yaxis': dict(
-#                 title='y Axis',
-#                 titlefont=dict(
-#                     family='Helvetica, monospace',
-#                     size=20,
-#                     color='#7f7f7f'
-#                 ))
-#         }
-#     }
-#     return figure
+@app.callback(Output('example-graph2', 'figure'),
+             [Input('upload-data', 'children')])
+def get_after_frequency(DataTable):
+
+    wordsA = freqA['word'].tolist()
+    twordsA = freqA['count'].tolist()
+
+    figure = go.Figure(
+        data=[
+
+            go.Bar(
+                x=wordsA,
+                y=twordsA,
+                name='words after cleaning',
+                marker=go.bar.Marker(
+                    color='rgb(26, 118, 255)'
+                )
+            )
+        ],
+        layout=go.Layout(
+            title='After Cleaning',
+            showlegend=True,
+            legend=go.layout.Legend(
+                x=0,
+                y=1.0
+            ),
+            margin=go.layout.Margin(l=40, r=0, t=40, b=30)
+        )
+    )
+
+    return figure
 
 
 if __name__ == '__main__':
