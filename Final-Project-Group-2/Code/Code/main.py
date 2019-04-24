@@ -129,9 +129,6 @@ def parse_contents(contents, filename, date):
 
             ], className="three columns"),
 
-
-
-
         html.Br(),
         html.Br(),
 
@@ -161,7 +158,6 @@ def parse_contents(contents, filename, date):
                         margin=go.layout.Margin(l=40, r=0, t=40, b=30)
                     )
                 )
-
             ),
             ], className = 'six columns'),
 
@@ -193,12 +189,9 @@ def parse_contents(contents, filename, date):
                     ),
                 ], className='six columns'),
 
-
             ], className='row'),
     html.Br(),
     html.Br(),
-
-
         ], className="row")
 
     ], className="twelve columns")
@@ -215,8 +208,6 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
         return children
-
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)

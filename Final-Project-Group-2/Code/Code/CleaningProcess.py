@@ -85,11 +85,11 @@ class PreprocessReview:
 
     # renzo. Remove stop words and reassign to the same column
     def remove_stop_w(self):
-        stop_words = stopwords.words('english')
+        stop_words = stopwords.words('english') #cristina.
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].apply(lambda x: " ".join(x for x in str(x).split() if x not in stop_words))
         #Cristina. Get ride of numbers
         self.pr_df["reviews_text"] = self.pr_df["reviews_text"].str.replace('\d+', '')
-        self.pr_df['reviews_text'] = self.pr_df['reviews_text'].dropna().reset_index(drop=True) # Renzo: delete NaN and reindex
+        self.pr_df['reviews_text'] = self.pr_df['reviews_text'].dropna().reset_index(drop=True) # Cristina: delete NaN and reindex
 
         return self.pr_df
 
